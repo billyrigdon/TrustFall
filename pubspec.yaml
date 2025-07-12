@@ -64,8 +64,10 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/tiles/test_map.tmx
-    - assets/tiles/test.tsx
-    - assets/images/your_tilesheet.png
+    - assets/tiles/Interiors_free_32x32.tsx
+    - assets/tiles/Room_Builder_free_32x32.tsx
+    - assets/images/Interiors_free_32x32.png
+    - assets/images/Room_Builder_free_32x32.png
     - assets/images/sprite_right_1.png
     - assets/images/sprite_right_2.png
     - assets/images/sprite_bottom_right_1.png
