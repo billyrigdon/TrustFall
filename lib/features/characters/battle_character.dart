@@ -1,36 +1,6 @@
-// import 'package:game/services/attacks.dart';
-// import 'package:game/services/character_stats.dart';
-
-// abstract class BattleCharacter {
-//   String name;
-//   CharacterStats stats;
-//   int currentHP;
-
-//   BattleCharacter({required this.name, required this.stats})
-//     : currentHP = stats.hp.toInt();
-
-//   bool get isAlive => currentHP > 0;
-
-//   void takeDamage(int damage) {
-//     currentHP = (currentHP - damage).clamp(0, stats.hp.toInt());
-//   }
-
-//   void heal(int amount) {
-//     currentHP = (currentHP + amount).clamp(0, stats.hp.toInt());
-//   }
-
-//   void gainXpFromEnemy({required double baseXp, required int enemyLevel}) {
-//     final levelDiff = enemyLevel - stats.level;
-//     final modifier = 1.0 + (levelDiff * 0.1);
-//     stats.gainXP(baseXp * modifier.clamp(0.5, 2.0));
-//   }
-
-//   List<Attack> attacks = [
-//     Attack(name: 'Basic Attack', type: AttackType.normal, power: 1.0),
-//   ];
-// }
 import 'dart:convert';
 
+import 'package:game/features/characters/party/PartyMember.dart';
 import 'package:game/features/items/items.dart';
 import 'package:game/services/attacks.dart';
 import 'package:game/services/character_stats.dart';
@@ -45,6 +15,42 @@ abstract class BattleCharacter {
   int _currentHP = 0;
   List<Item> inventory = [];
   List<Attack> attacks = [];
+
+  List<PartyMember> currentParty = [];
+
+  Future<void> loadParty() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = prefs.getStringList('$name-party') ?? [];
+
+    currentParty =
+        jsonList.map((str) {
+          final data = jsonDecode(str);
+          return PartyMember.fromJson(data); // replace with factory if needed
+        }).toList();
+  }
+
+  Future<void> saveParty() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = currentParty.map((p) => jsonEncode(p.toJson())).toList();
+    await prefs.setStringList('$name-party', jsonList);
+  }
+
+  void addToParty(PartyMember member) {
+    if (!currentParty.any((m) => m.name == member.name)) {
+      currentParty.add(member);
+      saveParty();
+    }
+  }
+
+  void removeFromParty(String name) {
+    currentParty.removeWhere((m) => m.name == name);
+    saveParty();
+  }
+
+  void clearParty() {
+    currentParty.clear();
+    saveParty();
+  }
 
   void addItem(Item item) => inventory.add(item);
   void removeItem(Item item) => inventory.remove(item);

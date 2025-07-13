@@ -12,7 +12,7 @@ import 'package:game/features/battle/battle_overlay.dart';
 import 'package:game/features/characters/battle_character.dart';
 import 'package:game/features/characters/enemies/test_enemy.dart';
 import 'package:game/features/characters/main_player.dart';
-import 'package:game/features/characters/party/test_friend.dart';
+import 'package:game/features/characters/party/PartyMember.dart';
 import 'package:game/features/menus/pause_menu.dart';
 import 'package:game/features/menus/settings_menu.dart';
 import 'package:game/features/menus/start_menu.dart';

@@ -2,16 +2,18 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum CharacterClass { balanced, attacker, mage, healer }
+enum CharacterClass { balanced, berserker, healer, manipulator }
 
 class CharacterStats {
   int level;
   double xp;
   double xpToNext;
+  double maxHp;
+  double reputation;
   double confidence;
+  double empathy;
   double strength;
   double defense;
-  double maxHp;
   double speed;
   double intelligence;
 
@@ -22,6 +24,8 @@ class CharacterStats {
     this.level = 1,
     this.xp = 0,
     this.xpToNext = 100,
+    this.reputation = 0,
+    this.empathy = 10,
     this.confidence = 10,
     this.strength = 10,
     this.defense = 10,
@@ -92,7 +96,7 @@ class CharacterStats {
 
   Map<String, double> _getGrowthRates() {
     switch (charClass) {
-      case CharacterClass.attacker:
+      case CharacterClass.berserker:
         return {
           'confidence': 2,
           'strength': 4,
@@ -100,8 +104,10 @@ class CharacterStats {
           'hp': 5,
           'speed': 2,
           'intelligence': 1,
+          'empathy': 1,
+          'reputation': 1,
         };
-      case CharacterClass.mage:
+      case CharacterClass.manipulator:
         return {
           'confidence': 2,
           'strength': 1,
@@ -109,6 +115,8 @@ class CharacterStats {
           'hp': 3,
           'speed': 2,
           'intelligence': 5,
+          'empathy': 1,
+          'reputation': 1,
         };
       case CharacterClass.healer:
         return {
@@ -118,6 +126,8 @@ class CharacterStats {
           'hp': 4,
           'speed': 2,
           'intelligence': 3,
+          'empathy': 1,
+          'reputation': 1,
         };
       case CharacterClass.balanced:
       default:
@@ -128,6 +138,8 @@ class CharacterStats {
           'hp': 4,
           'speed': 2,
           'intelligence': 2,
+          'empathy': 1,
+          'reputation': 1,
         };
     }
   }
@@ -138,6 +150,8 @@ class CharacterStats {
     'xpToNext': xpToNext,
     'confidence': confidence,
     'strength': strength,
+    'empathy': empathy,
+    'reputation': reputation,
     'defense': defense,
     'maxHp': maxHp,
     'speed': speed,
@@ -148,19 +162,22 @@ class CharacterStats {
 
   static CharacterStats fromJson(Map<String, dynamic> json) {
     return CharacterStats(
-      level: json['level'],
-      xp: json['xp'],
-      xpToNext: json['xpToNext'],
-      confidence: json['confidence'],
-      strength: json['strength'],
-      defense: json['defense'],
-      maxHp: json['maxHp'],
-      speed: json['speed'],
-      intelligence: json['intelligence'],
+      level: (json['level'] ?? 1).toInt(),
+      xp: (json['xp'] ?? 0).toDouble(),
+      xpToNext: (json['xpToNext'] ?? 100).toDouble(),
+      confidence: (json['confidence'] ?? 10).toDouble(),
+      strength: (json['strength'] ?? 10).toDouble(),
+      defense: (json['defense'] ?? 10).toDouble(),
+      maxHp: (json['maxHp'] ?? 100).toDouble(),
+      speed: (json['speed'] ?? 10).toDouble(),
+      empathy: (json['empathy'] ?? 10).toDouble(),
+      reputation: (json['reputation'] ?? 10).toDouble(),
+      intelligence: (json['intelligence'] ?? 10).toDouble(),
       charClass: CharacterClass.values.firstWhere(
         (e) => e.toString().split('.').last == json['charClass'],
+        orElse: () => CharacterClass.balanced,
       ),
-      levelMultiplier: json['levelMultiplier'],
+      levelMultiplier: (json['levelMultiplier'] ?? 1.0).toDouble(),
     );
   }
 }

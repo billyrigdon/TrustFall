@@ -58,8 +58,8 @@ class BattleManager extends ChangeNotifier {
     if (!playerTurn || battleEnded || !target.isAlive) return;
 
     switch (item.type) {
-      case ItemType.health:
-        target.heal(20); // or read from a field like `item.power`
+      case ItemType.food:
+        target.heal(item.value ?? 0); // or read from a field like `item.power`
         break;
       default:
         // You can extend this logic to support buffs/equipment/etc.

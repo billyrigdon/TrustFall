@@ -6,7 +6,7 @@ import 'package:game/features/battle/battle_manager.dart';
 import 'package:game/features/characters/battle_character.dart';
 import 'package:game/features/characters/enemies/test_enemy.dart' as game_enemy;
 import 'package:game/features/characters/main_player.dart';
-import 'package:game/features/characters/party/test_friend.dart';
+import 'package:game/features/characters/party/PartyMember.dart';
 import 'package:game/features/items/items.dart';
 import 'package:game/main.dart';
 import 'package:game/services/attacks.dart';
@@ -359,7 +359,7 @@ class _BattleOverlayState extends State<BattleOverlay> {
   }
 
   Widget _buildAttackMenu() {
-    final currentChar = battleManager.party.first;
+    final currentChar = battleManager.party[turnIndex];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(currentChar.attacks.length, (i) {

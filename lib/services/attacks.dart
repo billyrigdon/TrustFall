@@ -1,4 +1,4 @@
-enum AttackType { normal, fire, water, wind }
+enum AttackType { mental, physical }
 
 AttackType attackTypeFromString(String str) =>
     AttackType.values.firstWhere((e) => e.toString().split('.').last == str);

@@ -1,39 +1,16 @@
-// import 'package:flutter/material.dart';
+import 'dart:async';
 
-// class PauseMenu extends StatelessWidget {
-//   const PauseMenu({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Center(
-//       child: Container(
-//         width: 220,
-//         padding: const EdgeInsets.all(20),
-//         decoration: BoxDecoration(
-//           color: Colors.black.withOpacity(0.85),
-//           borderRadius: BorderRadius.circular(16),
-//           border: Border.all(color: Colors.white),
-//         ),
-//         child: const Column(
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             Text('Paused', style: TextStyle(fontSize: 24, color: Colors.white)),
-//             SizedBox(height: 12),
-//             Text('Press P to resume', style: TextStyle(color: Colors.white70)),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:game/features/characters/battle_character.dart';
 import 'package:game/features/characters/main_player.dart';
+import 'package:game/features/characters/party/PartyMember.dart';
 import 'package:game/features/items/items.dart';
-// import 'package:game/models/item.dart';
+import 'package:game/services/settings_service.dart';
+import 'package:gamepads/gamepads.dart';
 
 class PauseMenu extends StatefulWidget {
   final MainPlayer player;
-  // final VoidCallback onResume;
 
   const PauseMenu({super.key, required this.player});
 
@@ -46,14 +23,106 @@ class _PauseMenuState extends State<PauseMenu> {
 
   final List<String> tabs = ['Inventory', 'Equipment', 'Party'];
 
+  final SettingsService settings = SettingsService();
+  StreamSubscription<GamepadEvent>? _gamepadSub;
+  Set<String> _activeInputs = {};
+
+  @override
+  void initState() {
+    super.initState();
+    RawKeyboard.instance.addListener(_onKey);
+    _gamepadSub = Gamepads.events.listen(_onGamepad);
+  }
+
+  @override
+  void dispose() {
+    RawKeyboard.instance.removeListener(_onKey);
+    _gamepadSub?.cancel();
+    super.dispose();
+  }
+
+  void _onKey(RawKeyEvent event) {
+    if (event is! RawKeyDownEvent) return;
+
+    final label =
+        event.logicalKey.keyLabel.isEmpty
+            ? event.logicalKey.debugName ?? ''
+            : event.logicalKey.keyLabel;
+
+    _handleInput(label);
+  }
+
+  void _onGamepad(GamepadEvent event) {
+    final typeStr = event.type.toString();
+    final isAxis = typeStr.contains('axis') || typeStr.contains('analog');
+    final isButton = event.type == KeyType.button;
+
+    if (isAxis) {
+      final positive = '${event.gamepadId}:${event.key}:+';
+      final negative = '${event.gamepadId}:${event.key}:-';
+
+      if (event.value >= 0.9) {
+        _activeInputs.add(positive);
+        _activeInputs.remove(negative);
+        _handleGamepadInput(positive);
+      } else if (event.value <= -0.9) {
+        _activeInputs.add(negative);
+        _activeInputs.remove(positive);
+        _handleGamepadInput(negative);
+      } else {
+        _activeInputs.remove(positive);
+        _activeInputs.remove(negative);
+      }
+    }
+
+    if (isButton) {
+      final input = '${event.gamepadId}:${event.key}';
+
+      if (event.value == 1.0) {
+        _activeInputs.add(input);
+        _handleGamepadInput(input);
+      } else if (event.value == 0.0) {
+        _activeInputs.remove(input);
+      }
+    }
+  }
+
+  void _handleGamepadInput(String input) {
+    final left = settings.getBinding('MoveLeft');
+    final right = settings.getBinding('MoveRight');
+
+    if (input == left) {
+      setState(
+        () => selectedTab = (selectedTab - 1 + tabs.length) % tabs.length,
+      );
+    } else if (input == right) {
+      setState(() => selectedTab = (selectedTab + 1) % tabs.length);
+    }
+  }
+
+  void _handleInput(String input) {
+    final left = settings.getBinding('MoveLeft');
+    final right = settings.getBinding('MoveRight');
+
+    final isLeft = input == left || input == 'Arrow Left' || input == '←';
+    final isRight = input == right || input == 'Arrow Right' || input == '→';
+
+    if (isLeft) {
+      setState(
+        () => selectedTab = (selectedTab - 1 + tabs.length) % tabs.length,
+      );
+    } else if (isRight) {
+      setState(() => selectedTab = (selectedTab + 1) % tabs.length);
+    }
+  }
+
   void _useItem(Item item) {
-    if (item.type == ItemType.health) {
+    if (item.type == ItemType.food) {
       widget.player.heal(item.value ?? 0);
       setState(() {
         widget.player.removeItem(item);
       });
     }
-    // Future: Handle other item types
   }
 
   Widget _buildInventory() {
@@ -70,11 +139,12 @@ class _PauseMenuState extends State<PauseMenu> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children:
           items.map((item) {
+            if (item.type == ItemType.currency) return Container();
             return Row(
               children: [
                 Expanded(
                   child: Text(
-                    '${item.name} (${item.type.name})',
+                    item.name,
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
@@ -99,26 +169,43 @@ class _PauseMenuState extends State<PauseMenu> {
   }
 
   Widget _buildPartyStats() {
+    List<BattleCharacter> party = [
+      widget.player,
+      ...widget.player.currentParty,
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '${widget.player.name} - Lvl ${widget.player.stats.level}',
-          style: const TextStyle(color: Colors.white),
-        ),
-        Text(
-          'HP: ${widget.player.currentHP}/${widget.player.stats.maxHp.toInt()}',
-          style: const TextStyle(color: Colors.white),
-        ),
-        const SizedBox(height: 8),
-        const Text('Attacks:', style: TextStyle(color: Colors.white)),
-        ...widget.player.attacks.map(
-          (a) => Text(
-            '- ${a.name} (${a.type.name}, ${a.power}x)',
-            style: const TextStyle(color: Colors.white70),
-          ),
-        ),
-      ],
+      children:
+          party.map((member) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${member.name} - Lvl ${member.stats.level}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  Text(
+                    'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  const Text(
+                    'Attacks:',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  ...member.attacks.map(
+                    (a) => Text(
+                      '- ${a.name} (${a.type.name}, ${a.power}x)',
+                      style: const TextStyle(color: Colors.white54),
+                    ),
+                  ),
+                  const Divider(color: Colors.white24),
+                ],
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -139,7 +226,8 @@ class _PauseMenuState extends State<PauseMenu> {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 300,
+        width: 500,
+        height: 500,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.9),
@@ -154,6 +242,12 @@ class _PauseMenuState extends State<PauseMenu> {
               style: TextStyle(fontSize: 24, color: Colors.white),
             ),
             const SizedBox(height: 12),
+            Text(
+              'Money: \$${widget.player.money}',
+              style: const TextStyle(color: Colors.amber, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(tabs.length, (i) {
@@ -172,15 +266,8 @@ class _PauseMenuState extends State<PauseMenu> {
               }),
             ),
             const SizedBox(height: 16),
-            _buildContent(),
+            Expanded(child: SingleChildScrollView(child: _buildContent())),
             const SizedBox(height: 24),
-            // TextButton(
-            //   onPressed: widget.onResume,
-            //   child: const Text(
-            //     'Resume',
-            //     style: TextStyle(color: Colors.amber, fontSize: 16),
-            //   ),
-            // ),
           ],
         ),
       ),

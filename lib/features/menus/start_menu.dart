@@ -1,99 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
-// import 'package:game/main.dart';
-
-// class StartMenu extends StatefulWidget {
-//   final TrustFall game;
-//   const StartMenu({super.key, required this.game});
-
-//   @override
-//   State<StartMenu> createState() => _StartMenuState();
-// }
-
-// class _StartMenuState extends State<StartMenu> {
-//   int selectedIndex = 0;
-//   final List<String> options = ['New Game', 'Load Game', 'Settings', 'Exit'];
-
-//   void _onSelect() {
-//     final selection = options[selectedIndex];
-//     switch (selection) {
-//       case 'New Game':
-//         widget.game.overlays.remove('StartMenu');
-//         widget.game.resumeEngine();
-//         break;
-//       case 'Load Game':
-//         // TODO: Implement load logic
-//         break;
-//       case 'Settings':
-//         widget.game.overlays.add('SettingsMenu');
-//         widget.game.overlays.remove('StartMenu');
-//         break;
-//       case 'Exit':
-//         // Works for desktop builds
-//         Future.delayed(const Duration(milliseconds: 200), () {
-//           WidgetsBinding.instance.handlePopRoute();
-//         });
-//         break;
-//     }
-//   }
-
-//   void _onKey(RawKeyEvent event) {
-//     if (event is RawKeyDownEvent) {
-//       if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-//         setState(() => selectedIndex = (selectedIndex + 1) % options.length);
-//       } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-//         setState(
-//           () =>
-//               selectedIndex =
-//                   (selectedIndex - 1 + options.length) % options.length,
-//         );
-//       } else if (event.logicalKey == LogicalKeyboardKey.enter ||
-//           event.logicalKey == LogicalKeyboardKey.space) {
-//         _onSelect();
-//       }
-//     }
-//   }
-
-//   @override
-//   void initState() {
-//     RawKeyboard.instance.addListener(_onKey);
-//     super.initState();
-//   }
-
-//   @override
-//   void dispose() {
-//     RawKeyboard.instance.removeListener(_onKey);
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Material(
-//       color: Colors.black,
-//       child: Center(
-//         child: Column(
-//           mainAxisSize: MainAxisSize.min,
-//           children: List.generate(options.length, (i) {
-//             final selected = i == selectedIndex;
-//             return Padding(
-//               padding: const EdgeInsets.all(8.0),
-//               child: Text(
-//                 '${selected ? '▶' : '  '} ${options[i]}',
-//                 style: TextStyle(
-//                   fontSize: 24,
-//                   color: selected ? Colors.amber : Colors.white,
-//                   fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-//                   fontFamily: 'monospace',
-//                 ),
-//               ),
-//             );
-//           }),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
@@ -152,37 +56,6 @@ class _StartMenuState extends State<StartMenu> {
     _handleInput(keyLabel);
   }
 
-  // void _onGamepad(GamepadEvent event) {
-  //   if (event.type == KeyType.button && event.value.abs() > 0.9) {
-  //     final input =
-  //         '${event.gamepadId}:${event.key}:${event.value > 0 ? '+' : '-'}';
-
-  //     final up = settings.getBinding('MoveUp');
-  //     final down = settings.getBinding('MoveDown');
-  //     final left = settings.getBinding('MoveLeft');
-  //     final right = settings.getBinding('MoveRight');
-  //     final action = settings.getBinding('Action'); // buttons won't have +/-
-
-  //     print('[Axis] event=$input, up=$up, down=$down');
-
-  //     if (input == up)
-  //       _handleInput(up);
-  //     else if (input == down)
-  //       _handleInput(down);
-  //     else if (input == left)
-  //       _handleInput(left);
-  //     else if (input == right)
-  //       _handleInput(right);
-  //   }
-
-  //   if (event.type == KeyType.button && event.value == 1.0) {
-  //     final input = '${event.gamepadId}:${event.key}';
-  //     if (input == settings.getBinding('Action')) {
-  //       _handleInput(input);
-  //     }
-  //   }
-  // }
-
   void _onGamepad(GamepadEvent event) {
     final typeString = event.type.toString();
 
@@ -219,26 +92,6 @@ class _StartMenuState extends State<StartMenu> {
       if (input == action) _handleInput(action);
     }
   }
-
-  // void _handleInput(String inputLabel) {
-  //   if (!isReady) return;
-
-  //   final up = settings.getBinding('MoveUp');
-  //   final down = settings.getBinding('MoveDown');
-  //   final action = settings.getBinding('Action');
-
-  //   if (inputLabel == down) {
-  //     setState(() => selectedIndex = (selectedIndex + 1) % options.length);
-  //   } else if (inputLabel == up) {
-  //     setState(
-  //       () =>
-  //           selectedIndex =
-  //               (selectedIndex - 1 + options.length) % options.length,
-  //     );
-  //   } else if (inputLabel == action) {
-  //     _onSelect();
-  //   }
-  // }
 
   void _handleInput(String inputLabel) {
     if (!isReady) return;

@@ -67,16 +67,6 @@ class _SettingsMenuState extends State<SettingsMenu> {
     });
   }
 
-  // void _loadBindings() async {
-  //   await SettingsService().load(); // Ensure prefs loaded
-  //   final actions = ['MoveUp', 'MoveDown', 'MoveLeft', 'MoveRight', 'Action'];
-  //   setState(() {
-  //     for (var action in actions) {
-  //       keyBindings[action] = SettingsService().getBinding(action);
-  //     }
-  //   });
-  // }
-
   Widget dropdownSetting({
     required String label,
     required String value,

@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Image, Widget;
 import 'package:game/features/characters/battle_character.dart';
+import 'package:game/features/characters/party/PartyMember.dart';
 import 'package:game/features/items/items.dart';
 import 'package:game/services/attacks.dart';
 import 'package:game/services/character_stats.dart';
@@ -91,4 +92,34 @@ class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
 
   @override
   List<Item> inventory = [];
+
+  @override
+  List<PartyMember> currentParty = [];
+
+  @override
+  void addToParty(PartyMember partyMemberName) {
+    // TODO: implement addToParty
+  }
+
+  @override
+  void clearParty() {
+    // TODO: implement clearParty
+  }
+
+  @override
+  Future<void> loadParty() {
+    // TODO: implement loadParty
+    throw UnimplementedError();
+  }
+
+  @override
+  void removeFromParty(String partyMemberName) {
+    // TODO: implement removeFromParty
+  }
+
+  @override
+  Future<void> saveParty() {
+    // TODO: implement saveParty
+    throw UnimplementedError();
+  }
 }

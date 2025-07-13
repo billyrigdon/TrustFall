@@ -9,7 +9,7 @@ import 'package:flame_tiled/flame_tiled.dart';
 import 'package:flutter/services.dart';
 import 'package:game/features/characters/battle_character.dart';
 import 'package:game/features/characters/enemies/test_enemy.dart';
-import 'package:game/features/characters/party/test_friend.dart';
+import 'package:game/features/characters/party/PartyMember.dart';
 import 'package:game/features/items/items.dart';
 import 'package:game/main.dart';
 import 'package:game/services/attacks.dart';
@@ -125,12 +125,23 @@ class MainPlayer extends SpriteAnimationComponent
     await _loadHPFromPrefs();
     await loadInventory();
     await loadAttacks();
+    await loadParty();
+
+    // if (currentParty.isEmpty) {
+    //   // Preload default test party
+    //   currentParty = [
+    //     PartyMember(name: 'Buddy', charClass: CharacterClass.healer),
+    //     PartyMember(name: 'Clobber', charClass: CharacterClass.berserker),
+    //     PartyMember(name: 'Talker', charClass: CharacterClass.manipulator),
+    //   ];
+
+    //   await saveParty();
+    // }
   }
 
-  @override
   List<Attack> _defaultAttacks() => [
-    Attack(name: 'Slash', type: AttackType.normal, power: 1.0),
-    Attack(name: 'Inspire', type: AttackType.fire, power: 1.2),
+    Attack(name: 'Kick', type: AttackType.physical, power: 1.0),
+    Attack(name: 'Charm', type: AttackType.mental, power: 1.2),
   ];
 
   @override
@@ -263,12 +274,9 @@ class MainPlayer extends SpriteAnimationComponent
       if (keyLabel == pause || keyLabel == 'Key P') gameRef.togglePause();
       if ((keyLabel == battle || keyLabel == 'Key B') && !gameRef.inBattle) {
         gameRef.startBattle(
-          [
-            this,
-            TestPartyMember(name: 'Buddy', charClass: CharacterClass.attacker),
-          ],
+          [this, ...currentParty],
           Enemy(
-            name: 'Slime Cat',
+            name: 'Cat',
             level: 2,
             stats: CharacterStats(
               charClass: CharacterClass.balanced,
@@ -276,7 +284,7 @@ class MainPlayer extends SpriteAnimationComponent
               strength: 10,
             ),
             attacks: [
-              Attack(name: 'Scratch', type: AttackType.normal, power: 1.0),
+              Attack(name: 'Punch', type: AttackType.physical, power: 1.0),
             ],
           ),
         );
@@ -350,13 +358,7 @@ class MainPlayer extends SpriteAnimationComponent
         if (input == pause) gameRef.togglePause();
         if (input == battle && !gameRef.inBattle)
           gameRef.startBattle(
-            [
-              this,
-              TestPartyMember(
-                name: 'Buddy',
-                charClass: CharacterClass.attacker,
-              ),
-            ],
+            [this, ...currentParty],
             Enemy(
               name: 'Slime Cat',
               level: 2,
@@ -366,7 +368,7 @@ class MainPlayer extends SpriteAnimationComponent
                 strength: 10,
               ),
               attacks: [
-                Attack(name: 'Scratch', type: AttackType.normal, power: 1.0),
+                Attack(name: 'Scratch', type: AttackType.physical, power: 1.0),
               ],
             ),
           );
@@ -385,26 +387,40 @@ class MainPlayer extends SpriteAnimationComponent
 
     if (raw == null || raw.isEmpty) {
       inventory = [
-        Item(name: 'Potion', type: ItemType.health),
-        Item(name: 'Map Fragment', type: ItemType.keyItem),
+        Item(name: 'Cookie', type: ItemType.food, damage: 1, price: 5),
+        Item(name: 'Stabilizer', type: ItemType.medicine, damage: 1, price: 10),
+        Item(name: 'Toy', type: ItemType.keyItem, damage: 3, price: 5),
+        Item(name: 'Plushie', type: ItemType.keyItem, damage: 1, price: 15),
+        Item(name: 'Trinket', type: ItemType.keyItem, damage: 3, price: 100),
         Equipment(
-          name: 'Wooden Sword',
-          slot: EquipmentSlot.weapon,
-          strength: 5,
+          name: 'Shoes',
+          slot: EquipmentSlot.footwear,
+          damage: 5,
+          price: 25,
         ),
       ];
-      await saveInventory();
     } else {
       inventory =
           raw.map((str) {
-            final json = Map<String, dynamic>.from(
-              (str.startsWith('{')) ? (jsonDecode(str)) : {},
-            );
+            final json = Map<String, dynamic>.from(jsonDecode(str));
             return json['slot'] != null
                 ? Equipment.fromJson(json)
                 : Item.fromJson(json);
           }).toList();
     }
+
+    // 🪙 Ensure currency is always present
+    final existingCurrency = inventory.firstWhere(
+      (item) => item.type == ItemType.currency,
+      orElse:
+          () =>
+              Item(name: 'Money', type: ItemType.currency, damage: 0, value: 0),
+    );
+
+    inventory.removeWhere((item) => item.type == ItemType.currency);
+    inventory.insert(0, existingCurrency); // Ensure it's always the first item
+
+    await saveInventory();
   }
 
   Future<void> saveInventory() async {
@@ -423,6 +439,32 @@ class MainPlayer extends SpriteAnimationComponent
   void removeItem(Item item) {
     inventory.removeWhere((i) => i.name == item.name);
     saveInventory();
+  }
+
+  int get money {
+    final bits = inventory.firstWhere(
+      (item) => item.type == ItemType.currency,
+      orElse:
+          () =>
+              Item(name: 'Bits', type: ItemType.currency, damage: 0, value: 0),
+    );
+    return bits.value ?? 0;
+  }
+
+  set money(int amount) {
+    final index = inventory.indexWhere(
+      (item) => item.type == ItemType.currency,
+    );
+    if (index != -1) {
+      final bits = inventory[index];
+      inventory[index] = Item(
+        name: bits.name,
+        type: bits.type,
+        damage: 0,
+        value: amount,
+      );
+      saveInventory();
+    }
   }
 
   @override
@@ -445,4 +487,48 @@ class MainPlayer extends SpriteAnimationComponent
     }
   }
 
+  @override
+  List<PartyMember> currentParty = [];
+
+  @override
+  void addToParty(PartyMember member) {
+    if (!currentParty.any((m) => m.name == member.name)) {
+      currentParty.add(member);
+      saveParty(); // save after adding
+    }
+  }
+
+  @override
+  void clearParty() {
+    currentParty.clear();
+    saveParty(); // save after clearing
+  }
+
+  @override
+  Future<void> loadParty() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawList = prefs.getStringList('$name-party') ?? [];
+
+    currentParty =
+        rawList.map((jsonStr) {
+          final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+          return PartyMember.fromJson(
+            data,
+          ); // assumes PartyMember.fromJson exists
+        }).toList();
+  }
+
+  @override
+  void removeFromParty(String name) {
+    currentParty.removeWhere((m) => m.name == name);
+    saveParty(); // save after removal
+  }
+
+  @override
+  Future<void> saveParty() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList =
+        currentParty.map((member) => jsonEncode(member.toJson())).toList();
+    await prefs.setStringList('$name-party', jsonList);
+  }
 }
