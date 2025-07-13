@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/experimental.dart';
@@ -9,11 +10,13 @@ import 'package:flutter/services.dart';
 import 'package:game/features/characters/battle_character.dart';
 import 'package:game/features/characters/enemies/test_enemy.dart';
 import 'package:game/features/characters/party/test_friend.dart';
+import 'package:game/features/items/items.dart';
 import 'package:game/main.dart';
 import 'package:game/services/attacks.dart';
 import 'package:game/services/character_stats.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:gamepads/gamepads.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MainPlayer extends SpriteAnimationComponent
     with KeyboardHandler, CollisionCallbacks, HasGameRef<TrustFall>
@@ -21,6 +24,7 @@ class MainPlayer extends SpriteAnimationComponent
   final double speed = 100.0;
   Vector2 moveDirection = Vector2.zero();
   Vector2 _lastSafePosition = Vector2.zero();
+  String lastDirection = 'down';
 
   @override
   late List<Attack> attacks;
@@ -34,8 +38,15 @@ class MainPlayer extends SpriteAnimationComponent
   @override
   String name = "Main Player";
 
+  late SpriteAnimation idleRight;
+  late SpriteAnimation idleDown;
+  // late SpriteAnimation idleLeft;
   late SpriteAnimation idleAnimation;
-  late SpriteAnimation walkAnimation;
+  late SpriteAnimation walkUp;
+  late SpriteAnimation walkDown;
+  late SpriteAnimation walkLeft;
+  late SpriteAnimation walkRight;
+
   late SpriteAnimation diagAnimation;
 
   final settings = SettingsService();
@@ -43,6 +54,16 @@ class MainPlayer extends SpriteAnimationComponent
   final Set<String> _activeInputs = {};
 
   MainPlayer() : super(size: Vector2(48, 80), anchor: Anchor.topLeft);
+
+  Future<void> _loadHPFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    currentHP = prefs.getInt('$name-hp') ?? stats.maxHp.toInt();
+  }
+
+  Future<void> _saveHPToPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('$name-hp', currentHP);
+  }
 
   @override
   Future<void> onLoad() async {
@@ -52,40 +73,247 @@ class MainPlayer extends SpriteAnimationComponent
 
     add(
       RectangleHitbox.relative(
-        Vector2(1, 0.5), // width: 60%, height: 50%
+        Vector2(1, 0.5),
         parentSize: size,
-        position: Vector2(1, 40), // place it at the halfway mark
-        anchor:
-            Anchor
-                .topLeft, // anchor hitbox to top-left of its relative position
+        position: Vector2(1, 40),
+        anchor: Anchor.topLeft,
       )..collisionType = CollisionType.active,
     );
 
-    // Load sprites
-    idleAnimation = SpriteAnimation.spriteList([
+    idleRight = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('sprite_right_1.png'),
+    ], stepTime: 1.0);
+
+    idleDown = SpriteAnimation.spriteList([
       await gameRef.loadSprite('sprite.png'),
     ], stepTime: 1.0);
 
-    walkAnimation = SpriteAnimation.spriteList([
+    // idleLeft = SpriteAnimation.spriteList([
+    //   // await gameRef.loadSprite('sprite_left.png'),
+    // ], stepTime: 1.0);
+
+    walkRight = SpriteAnimation.spriteList([
       await gameRef.loadSprite('sprite_right_1.png'),
       await gameRef.loadSprite('sprite_right_2.png'),
+    ], stepTime: 0.2);
+
+    walkLeft = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('sprite.png'),
+      await gameRef.loadSprite('sprite.png'),
+    ], stepTime: 0.2);
+
+    walkUp = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('sprite.png'),
+      await gameRef.loadSprite('sprite.png'),
+    ], stepTime: 0.2);
+
+    walkDown = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('sprite.png'),
+      await gameRef.loadSprite('sprite.png'),
     ], stepTime: 0.2);
 
     diagAnimation = SpriteAnimation.spriteList([
       await gameRef.loadSprite('sprite_bottom_right_1.png'),
     ], stepTime: 0.2);
 
-    animation = idleAnimation;
+    idleAnimation = idleDown;
 
     _gamepadSub = Gamepads.events.listen(_handleGamepad);
 
-    stats = CharacterStats(charClass: CharacterClass.balanced);
+    stats = await CharacterStats.load(name, CharacterClass.balanced);
 
-    attacks = [
-      Attack(name: 'Slash', type: AttackType.normal, power: 1.0),
-      Attack(name: 'Inspire', type: AttackType.fire, power: 1.2),
-    ];
+    await _loadHPFromPrefs();
+    await loadInventory();
+    await loadAttacks();
   }
+
+  @override
+  List<Attack> _defaultAttacks() => [
+    Attack(name: 'Slash', type: AttackType.normal, power: 1.0),
+    Attack(name: 'Inspire', type: AttackType.fire, power: 1.2),
+  ];
+
+  @override
+  Future<void> loadAttacks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('$name-attacks');
+
+    if (raw == null || raw.isEmpty) {
+      attacks = _defaultAttacks();
+      await saveAttacks();
+    } else {
+      attacks =
+          raw
+              .map(
+                (str) =>
+                    Attack.fromJson(Map<String, dynamic>.from(jsonDecode(str))),
+              )
+              .toList();
+    }
+  }
+
+  @override
+  Future<void> saveAttacks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = attacks.map((a) => jsonEncode(a.toJson())).toList();
+    await prefs.setStringList('$name-attacks', list);
+  }
+
+  @override
+  void learnAttack(Attack attack) {
+    if (!attacks.any((a) => a.name == attack.name)) {
+      attacks.add(attack);
+      saveAttacks();
+    }
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    moveDirection = Vector2.zero();
+
+    final up = settings.getBinding('MoveUp');
+    final down = settings.getBinding('MoveDown');
+    final left = settings.getBinding('MoveLeft');
+    final right = settings.getBinding('MoveRight');
+
+    final pressingUp = _checkInput(up, ['Arrow Up', 'W', 'w']);
+    final pressingDown = _checkInput(down, ['Arrow Down', 'S', 's']);
+    final pressingLeft = _checkInput(left, ['Arrow Left', 'A', 'a']);
+    final pressingRight = _checkInput(right, ['Arrow Right', 'D', 'd']);
+
+    if (pressingUp) moveDirection.y -= 1;
+    if (pressingDown) moveDirection.y += 1;
+    if (pressingLeft) moveDirection.x -= 1;
+    if (pressingRight) moveDirection.x += 1;
+
+    if (moveDirection.x > 0) {
+      lastDirection = 'right';
+      animation = walkRight;
+    } else if (moveDirection.x < 0) {
+      lastDirection = 'left';
+      animation = walkLeft;
+    } else if (moveDirection.y > 0) {
+      lastDirection = 'down';
+      animation = walkDown;
+    } else if (moveDirection.y < 0) {
+      lastDirection = 'up';
+      animation = walkUp;
+    }
+
+    // 💨 Move
+    if (moveDirection.length > 0) {
+      _lastSafePosition = position.clone();
+      moveDirection.normalize();
+      position += moveDirection * speed * dt;
+    } else {
+      // 😌 Idle animations based on last direction
+      switch (lastDirection) {
+        case 'left':
+          // animation = idleLeft;
+          break;
+        case 'right':
+          animation = idleRight;
+          break;
+        case 'up':
+          // animation = idleUp;
+          break;
+        case 'down':
+        default:
+          animation = idleDown;
+          break;
+      }
+    }
+  }
+
+  @override
+  void onCollision(Set<Vector2> points, PositionComponent other) {
+    super.onCollision(points, other);
+    if (other is Wall) {
+      position = _lastSafePosition;
+    }
+  }
+
+  @override
+  void onRemove() {
+    _gamepadSub?.cancel();
+    super.onRemove();
+  }
+
+  bool _checkInput(String binding, List<String> fallbacks) {
+    return _activeInputs.contains(binding) ||
+        fallbacks.any(_activeInputs.contains);
+  }
+
+  @override
+  bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
+    final keyLabel =
+        event.logicalKey.keyLabel.isEmpty
+            ? event.logicalKey.debugName ?? ''
+            : event.logicalKey.keyLabel;
+
+    if (event is KeyDownEvent) {
+      _activeInputs.add(keyLabel);
+
+      final talk = settings.getBinding('Talk');
+      final pause = settings.getBinding('Pause');
+      final battle = settings.getBinding('Battle');
+
+      if (keyLabel == talk || keyLabel == 'Space') gameRef.showTextBox();
+      if (keyLabel == pause || keyLabel == 'Key P') gameRef.togglePause();
+      if ((keyLabel == battle || keyLabel == 'Key B') && !gameRef.inBattle) {
+        gameRef.startBattle(
+          [
+            this,
+            TestPartyMember(name: 'Buddy', charClass: CharacterClass.attacker),
+          ],
+          Enemy(
+            name: 'Slime Cat',
+            level: 2,
+            stats: CharacterStats(
+              charClass: CharacterClass.balanced,
+              maxHp: 60,
+              strength: 10,
+            ),
+            attacks: [
+              Attack(name: 'Scratch', type: AttackType.normal, power: 1.0),
+            ],
+          ),
+        );
+      }
+    } else if (event is KeyUpEvent) {
+      _activeInputs.remove(keyLabel);
+    }
+
+    return true;
+  }
+
+  @override
+  void takeDamage(int damage) {
+    currentHP = (currentHP - damage).clamp(0, stats.maxHp.toInt());
+    _saveHPToPrefs();
+
+    if (currentHP <= 0) {
+      gameRef.endBattle(); // This assumes you have such a method
+    }
+  }
+
+  @override
+  void heal(int amount) {
+    currentHP = (currentHP + amount).clamp(0, stats.maxHp.toInt());
+    _saveHPToPrefs();
+  }
+
+  @override
+  void gainXpFromEnemy({required double baseXp, required int enemyLevel}) {
+    final levelDiff = enemyLevel - stats.level;
+    final modifier = 1.0 + (levelDiff * 0.1);
+    stats.gainXP(baseXp * modifier.clamp(0.5, 2.0), id: name);
+    // You could persist level/xp here too later
+  }
+
+  @override
+  bool get isAlive => currentHP > 0;
 
   void _handleGamepad(GamepadEvent event) {
     final typeStr = event.type.toString();
@@ -126,7 +354,7 @@ class MainPlayer extends SpriteAnimationComponent
               this,
               TestPartyMember(
                 name: 'Buddy',
-                stats: CharacterStats(charClass: CharacterClass.attacker),
+                charClass: CharacterClass.attacker,
               ),
             ],
             Enemy(
@@ -134,7 +362,7 @@ class MainPlayer extends SpriteAnimationComponent
               level: 2,
               stats: CharacterStats(
                 charClass: CharacterClass.balanced,
-                hp: 60,
+                maxHp: 60,
                 strength: 10,
               ),
               attacks: [
@@ -148,117 +376,64 @@ class MainPlayer extends SpriteAnimationComponent
     }
   }
 
-  bool _checkInput(String binding, List<String> fallbacks) {
-    return _activeInputs.contains(binding) ||
-        fallbacks.any(_activeInputs.contains);
-  }
-
   @override
-  void update(double dt) {
-    super.update(dt);
-    moveDirection = Vector2.zero();
+  List<Item> inventory = [];
 
-    final up = settings.getBinding('MoveUp');
-    final down = settings.getBinding('MoveDown');
-    final left = settings.getBinding('MoveLeft');
-    final right = settings.getBinding('MoveRight');
+  Future<void> loadInventory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('$name-inventory');
 
-    if (_checkInput(up, ['Arrow Up', 'W', 'w'])) moveDirection.y -= 1;
-    if (_checkInput(down, ['Arrow Down', 'S', 's'])) moveDirection.y += 1;
-    if (_checkInput(left, ['Arrow Left', 'A', 'a'])) moveDirection.x -= 1;
-    if (_checkInput(right, ['Arrow Right', 'D', 'd'])) moveDirection.x += 1;
-
-    if (moveDirection.length > 0) {
-      _lastSafePosition = position.clone(); // save last valid position
-      moveDirection.normalize();
-      position += moveDirection * speed * dt;
-
-      animation =
-          (moveDirection.x.abs() > 0 && moveDirection.y.abs() > 0)
-              ? diagAnimation
-              : walkAnimation;
+    if (raw == null || raw.isEmpty) {
+      inventory = [
+        Item(name: 'Potion', type: ItemType.health),
+        Item(name: 'Map Fragment', type: ItemType.keyItem),
+        Equipment(
+          name: 'Wooden Sword',
+          slot: EquipmentSlot.weapon,
+          strength: 5,
+        ),
+      ];
+      await saveInventory();
     } else {
-      animation = idleAnimation;
+      inventory =
+          raw.map((str) {
+            final json = Map<String, dynamic>.from(
+              (str.startsWith('{')) ? (jsonDecode(str)) : {},
+            );
+            return json['slot'] != null
+                ? Equipment.fromJson(json)
+                : Item.fromJson(json);
+          }).toList();
     }
   }
 
-  @override
-  void onCollision(Set<Vector2> points, PositionComponent other) {
-    super.onCollision(points, other);
-    if (other is Wall) {
-      position = _lastSafePosition; // revert to last known good position
-    }
+  Future<void> saveInventory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = inventory.map((item) => jsonEncode(item.toJson())).toList();
+    await prefs.setStringList('$name-inventory', data);
   }
 
   @override
-  void onRemove() {
-    _gamepadSub?.cancel();
-    super.onRemove();
+  void addItem(Item item) {
+    inventory.add(item);
+    saveInventory();
   }
 
   @override
-  bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-    final keyLabel =
-        event.logicalKey.keyLabel.isEmpty
-            ? event.logicalKey.debugName ?? ''
-            : event.logicalKey.keyLabel;
-
-    if (event is KeyDownEvent) {
-      _activeInputs.add(keyLabel);
-
-      final talk = settings.getBinding('Talk');
-      final pause = settings.getBinding('Pause');
-      final battle = settings.getBinding('Battle');
-
-      if (keyLabel == talk || keyLabel == 'Space') gameRef.showTextBox();
-      if (keyLabel == pause || keyLabel == 'Key P') gameRef.togglePause();
-      if ((keyLabel == battle || keyLabel == 'Key B') && !gameRef.inBattle) {
-        gameRef.startBattle(
-          [
-            this,
-            TestPartyMember(
-              name: 'Buddy',
-              stats: CharacterStats(charClass: CharacterClass.attacker),
-            ),
-          ],
-          Enemy(
-            name: 'Slime Cat',
-            level: 2,
-            stats: CharacterStats(
-              charClass: CharacterClass.balanced,
-              hp: 60,
-              strength: 10,
-            ),
-            attacks: [
-              Attack(name: 'Scratch', type: AttackType.normal, power: 1.0),
-            ],
-          ),
-        );
-      }
-    } else if (event is KeyUpEvent) {
-      _activeInputs.remove(keyLabel);
-    }
-
-    return true;
+  void removeItem(Item item) {
+    inventory.removeWhere((i) => i.name == item.name);
+    saveInventory();
   }
 
   @override
-  void takeDamage(int damage) {
-    currentHP = (currentHP - damage).clamp(0, stats.hp.toInt());
+  Future<void> loadHP() async {
+    final prefs = await SharedPreferences.getInstance();
+    currentHP = prefs.getInt('$name-hp') ?? stats.maxHp.toInt();
   }
 
   @override
-  void heal(int amount) {
-    currentHP = (currentHP + amount).clamp(0, stats.hp.toInt());
+  Future<void> saveHP() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('$name-hp', currentHP);
   }
-
-  @override
-  void gainXpFromEnemy({required double baseXp, required int enemyLevel}) {
-    final levelDiff = enemyLevel - stats.level;
-    final modifier = 1.0 + (levelDiff * 0.1);
-    stats.gainXP(baseXp * modifier.clamp(0.5, 2.0));
-  }
-
-  @override
-  bool get isAlive => currentHP > 0;
 }

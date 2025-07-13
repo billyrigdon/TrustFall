@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 enum CharacterClass { balanced, attacker, mage, healer }
 
 class CharacterStats {
@@ -7,7 +11,7 @@ class CharacterStats {
   double confidence;
   double strength;
   double defense;
-  double hp;
+  double maxHp;
   double speed;
   double intelligence;
 
@@ -21,19 +25,56 @@ class CharacterStats {
     this.confidence = 10,
     this.strength = 10,
     this.defense = 10,
-    this.hp = 50,
+    this.maxHp = 50,
     this.speed = 10,
     this.intelligence = 10,
     required this.charClass,
     this.levelMultiplier = 1.0,
   });
 
-  void gainXP(double amount) {
+  Future<void> loadStats(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    level = prefs.getInt('$id-level') ?? 1;
+    xp = prefs.getDouble('$id-xp') ?? 0;
+    xpToNext = prefs.getDouble('$id-xpToNext') ?? 100;
+  }
+
+  Future<void> saveStats(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('$id-level', level);
+    await prefs.setDouble('$id-xp', xp);
+    await prefs.setDouble('$id-xpToNext', xpToNext);
+  }
+
+  Future<void> save(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = jsonEncode(toJson());
+    await prefs.setString('$id-stats', jsonStr);
+  }
+
+  static Future<CharacterStats> load(
+    String id,
+    CharacterClass defaultClass,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString('$id-stats');
+
+    if (jsonStr != null) {
+      final map = jsonDecode(jsonStr);
+      return CharacterStats.fromJson(Map<String, dynamic>.from(map));
+    } else {
+      // fallback
+      return CharacterStats(charClass: defaultClass);
+    }
+  }
+
+  void gainXP(double amount, {required String id}) {
     xp += amount * levelMultiplier;
     while (xp >= xpToNext) {
       xp -= xpToNext;
       levelUp();
     }
+    save(id); // Save after XP gain
   }
 
   void levelUp() {
@@ -44,7 +85,7 @@ class CharacterStats {
     confidence += growthRates['confidence']!;
     strength += growthRates['strength']!;
     defense += growthRates['defense']!;
-    hp += growthRates['hp']!;
+    maxHp += growthRates['hp']!;
     speed += growthRates['speed']!;
     intelligence += growthRates['intelligence']!;
   }
@@ -89,5 +130,37 @@ class CharacterStats {
           'intelligence': 2,
         };
     }
+  }
+
+  Map<String, dynamic> toJson() => {
+    'level': level,
+    'xp': xp,
+    'xpToNext': xpToNext,
+    'confidence': confidence,
+    'strength': strength,
+    'defense': defense,
+    'maxHp': maxHp,
+    'speed': speed,
+    'intelligence': intelligence,
+    'charClass': charClass.toString().split('.').last,
+    'levelMultiplier': levelMultiplier,
+  };
+
+  static CharacterStats fromJson(Map<String, dynamic> json) {
+    return CharacterStats(
+      level: json['level'],
+      xp: json['xp'],
+      xpToNext: json['xpToNext'],
+      confidence: json['confidence'],
+      strength: json['strength'],
+      defense: json['defense'],
+      maxHp: json['maxHp'],
+      speed: json['speed'],
+      intelligence: json['intelligence'],
+      charClass: CharacterClass.values.firstWhere(
+        (e) => e.toString().split('.').last == json['charClass'],
+      ),
+      levelMultiplier: json['levelMultiplier'],
+    );
   }
 }

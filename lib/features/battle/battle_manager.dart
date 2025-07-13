@@ -1,58 +1,11 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:game/features/characters/battle_character.dart';
 import 'package:game/features/characters/enemies/test_enemy.dart';
 import 'package:game/features/characters/main_player.dart';
+import 'package:game/features/items/items.dart';
+import 'package:game/services/attacks.dart';
 
-// class BattleManager extends ChangeNotifier {
-//   int playerHP = 100;
-//   int enemyHP = 100;
-//   bool playerTurn = true;
-//   bool battleEnded = false;
-
-//   void attackEnemy() {
-//     if (!playerTurn || battleEnded) return;
-//     enemyHP -= 20;
-//     if (enemyHP <= 0) {
-//       enemyHP = 0;
-//       battleEnded = true;
-//     } else {
-//       playerTurn = false;
-//       Future.delayed(const Duration(seconds: 1), enemyAttack);
-//     }
-//     notifyListeners();
-//   }
-
-//   void useItem(String item) {
-//     if (!playerTurn || battleEnded) return;
-//     if (item == 'Burger') {
-//       playerHP = (playerHP + 20).clamp(0, 100);
-//     } else if (item == 'Cola') {
-//       playerHP = (playerHP + 10).clamp(0, 100);
-//     }
-//     playerTurn = false;
-//     Future.delayed(const Duration(seconds: 1), enemyAttack);
-//     notifyListeners();
-//   }
-
-//   void enemyAttack() {
-//     playerHP -= 15;
-//     if (playerHP <= 0) {
-//       playerHP = 0;
-//       battleEnded = true;
-//     } else {
-//       playerTurn = true;
-//     }
-//     notifyListeners();
-//   }
-
-//   void reset() {
-//     playerHP = 100;
-//     enemyHP = 100;
-//     playerTurn = true;
-//     battleEnded = false;
-//     notifyListeners();
-//   }
-// }
 class BattleManager extends ChangeNotifier {
   final List<BattleCharacter> party;
   final Enemy enemy;
@@ -63,25 +16,33 @@ class BattleManager extends ChangeNotifier {
     reset();
   }
 
-  void reset() {
+  Future<void> restoreAllHP() async {
     for (final member in party) {
-      member.currentHP = member.stats.hp.toInt();
+      member.currentHP = member.stats.maxHp.toInt();
+      await member.saveHP();
     }
-    enemy.currentHP = enemy.stats.hp.toInt();
+  }
+
+  void reset() {
+    // Don't reset HP to full — we now persist it
     playerTurn = true;
     battleEnded = false;
     notifyListeners();
   }
 
-  void attackEnemy(BattleCharacter attacker) {
-    if (!playerTurn || battleEnded) return;
-    final damage = attacker.stats.strength.toInt();
+  void attackEnemy(BattleCharacter attacker, Attack attack) {
+    if (!playerTurn || battleEnded || !attacker.isAlive) return;
+
+    final base = attacker.stats.strength;
+    final damage = (base * attack.power).round();
+
     enemy.takeDamage(damage);
 
     if (!enemy.isAlive) {
       battleEnded = true;
+
       for (final member in party) {
-        if (member is MainPlayer) {
+        if (member.isAlive) {
           member.gainXpFromEnemy(baseXp: 50, enemyLevel: enemy.level);
         }
       }
@@ -89,17 +50,25 @@ class BattleManager extends ChangeNotifier {
       playerTurn = false;
       Future.delayed(const Duration(seconds: 1), enemyAttack);
     }
+
     notifyListeners();
   }
 
-  void useItemOn(BattleCharacter target, String item) {
-    if (!playerTurn || battleEnded) return;
+  void useItemOn(BattleCharacter target, Item item) {
+    if (!playerTurn || battleEnded || !target.isAlive) return;
 
-    if (item == 'Burger') {
-      target.heal(20);
-    } else if (item == 'Cola') {
-      target.heal(10);
+    switch (item.type) {
+      case ItemType.health:
+        target.heal(20); // or read from a field like `item.power`
+        break;
+      default:
+        // You can extend this logic to support buffs/equipment/etc.
+        break;
     }
+
+    // Remove from whoever used it
+    final user = party.firstWhere((c) => c.inventory.contains(item));
+    user.removeItem(item);
 
     playerTurn = false;
     Future.delayed(const Duration(seconds: 1), enemyAttack);
@@ -107,16 +76,26 @@ class BattleManager extends ChangeNotifier {
   }
 
   void enemyAttack() {
-    final target = party.firstWhere(
-      (c) => c.isAlive,
-      orElse: () => party.first,
-    );
-    target.takeDamage(15);
-    if (!target.isAlive && party.every((c) => !c.isAlive)) {
+    final aliveTargets = party.where((c) => c.isAlive).toList();
+    if (aliveTargets.isEmpty) {
+      battleEnded = true;
+      restoreAllHP();
+      notifyListeners();
+      return;
+    }
+
+    final target = aliveTargets[Random().nextInt(aliveTargets.length)];
+    final attack = enemy.attacks[Random().nextInt(enemy.attacks.length)];
+    final damage = (enemy.stats.strength * attack.power).round();
+
+    target.takeDamage(damage);
+
+    if (party.every((c) => !c.isAlive)) {
       battleEnded = true;
     } else {
       playerTurn = true;
     }
+
     notifyListeners();
   }
 }

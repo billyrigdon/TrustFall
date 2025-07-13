@@ -7,6 +7,7 @@ import 'package:game/features/characters/battle_character.dart';
 import 'package:game/features/characters/enemies/test_enemy.dart' as game_enemy;
 import 'package:game/features/characters/main_player.dart';
 import 'package:game/features/characters/party/test_friend.dart';
+import 'package:game/features/items/items.dart';
 import 'package:game/main.dart';
 import 'package:game/services/attacks.dart';
 import 'package:game/services/character_stats.dart';
@@ -36,12 +37,19 @@ class _BattleOverlayState extends State<BattleOverlay> {
   bool itemMenuOpen = false;
   bool attackMenuOpen = false;
   int attackIndex = 0;
-  final List<String> commands = ['Attack', 'Items', 'Run'];
-  final List<String> items = ['Burger', 'Cola'];
   String? battleMessage;
-
+  int turnIndex = 0;
   StreamSubscription<GamepadEvent>? _gamepadSub;
   final SettingsService settings = SettingsService();
+  List<String> queuedMessages = [];
+  bool awaitingInputForMessage = false;
+
+  final List<String> commands = ['Attack', 'Items', 'Run'];
+
+  List<Item> get mainInventory {
+    final main = battleManager.party.firstWhere((c) => c is MainPlayer);
+    return main.inventory;
+  }
 
   @override
   void initState() {
@@ -115,18 +123,25 @@ class _BattleOverlayState extends State<BattleOverlay> {
                 (selectedIndex - 1 + commands.length) % commands.length,
       );
     } else if (isDown && itemMenuOpen) {
-      setState(() => selectedIndex = (selectedIndex + 1) % items.length);
+      setState(
+        () => selectedIndex = (selectedIndex + 1) % mainInventory.length,
+      );
     } else if (isUp && itemMenuOpen) {
       setState(
-        () => selectedIndex = (selectedIndex - 1 + items.length) % items.length,
+        () =>
+            selectedIndex =
+                (selectedIndex - 1 + mainInventory.length) %
+                mainInventory.length,
       );
     } else if (isDown && attackMenuOpen) {
-      final currentChar = battleManager.party.first;
+      final currentChar = battleManager.party[turnIndex];
+
       setState(
         () => attackIndex = (attackIndex + 1) % currentChar.attacks.length,
       );
     } else if (isUp && attackMenuOpen) {
-      final currentChar = battleManager.party.first;
+      final currentChar = battleManager.party[turnIndex];
+
       setState(
         () =>
             attackIndex =
@@ -138,83 +153,50 @@ class _BattleOverlayState extends State<BattleOverlay> {
     }
   }
 
+  void queueMessage(String message) {
+    queuedMessages.add(message);
+    if (!awaitingInputForMessage) {
+      showNextMessage();
+    }
+  }
+
+  void showNextMessage() {
+    if (queuedMessages.isNotEmpty) {
+      setState(() {
+        battleMessage = queuedMessages.removeAt(0);
+        awaitingInputForMessage = true;
+      });
+    } else {
+      setState(() {
+        battleMessage = null;
+        awaitingInputForMessage = false;
+      });
+    }
+  }
+
   void _handleSelection() {
-    final currentChar = battleManager.party.first;
+    final currentChar = battleManager.party[turnIndex];
 
     if (itemMenuOpen) {
-      battleManager.useItemOn(currentChar, items[selectedIndex]);
+      final item = mainInventory[selectedIndex];
+      battleManager.useItemOn(currentChar, item);
       setState(() {
+        battleMessage = '${currentChar.name} used ${item.name}!';
         itemMenuOpen = false;
         selectedIndex = 0;
-        battleMessage = '${currentChar.name} used ${items[selectedIndex]}!';
       });
+      _endTurn();
     } else if (attackMenuOpen) {
       final attack = currentChar.attacks[attackIndex];
-      final damage = (currentChar.stats.strength * attack.power).toInt();
-      widget.enemy.takeDamage(damage);
+      battleManager.attackEnemy(currentChar, attack);
 
       setState(() {
-        battleMessage =
-            '${currentChar.name} used ${attack.name}! '
-            'It did $damage damage!';
-      });
-
-      Future.delayed(const Duration(seconds: 1), () {
-        if (!widget.enemy.isAlive) {
-          setState(() {
-            battleMessage = '${widget.enemy.name} was defeated!';
-          });
-
-          Future.delayed(const Duration(seconds: 1), () {
-            // Grant XP to each party member
-            for (final member in battleManager.party) {
-              member.gainXpFromEnemy(
-                baseXp: 50,
-                enemyLevel: widget.enemy.level,
-              );
-            }
-
-            setState(() {
-              battleMessage = 'Victory!\nEveryone gained XP!';
-              battleManager.battleEnded = true;
-            });
-
-            Future.delayed(const Duration(seconds: 2), () {
-              if (mounted) widget.game.endBattle();
-            });
-          });
-        } else {
-          setState(() {
-            battleMessage = '${widget.enemy.name} is attacking!';
-          });
-
-          Future.delayed(const Duration(seconds: 1), () {
-            battleManager.enemyAttack();
-
-            // Check for game over
-            if (battleManager.party.every((c) => !c.isAlive)) {
-              setState(() {
-                battleMessage = 'You were defeated...';
-                battleManager.battleEnded = true;
-              });
-
-              Future.delayed(const Duration(seconds: 2), () {
-                if (mounted) widget.game.endBattle();
-              });
-            } else {
-              setState(() {
-                battleMessage = null;
-                battleManager.playerTurn = true;
-              });
-            }
-          });
-        }
-      });
-
-      setState(() {
+        battleMessage = '${currentChar.name} used ${attack.name}!';
         attackMenuOpen = false;
         attackIndex = 0;
       });
+
+      _endTurn();
     } else {
       switch (commands[selectedIndex]) {
         case 'Attack':
@@ -242,6 +224,28 @@ class _BattleOverlayState extends State<BattleOverlay> {
     }
   }
 
+  void _endTurn() {
+    Future.delayed(const Duration(seconds: 1), () {
+      setState(() {
+        turnIndex++;
+        battleMessage = null;
+
+        // If all party members have acted, let enemy go
+        if (turnIndex >= battleManager.party.length) {
+          turnIndex = 0;
+          battleManager.playerTurn = false;
+
+          Future.delayed(const Duration(seconds: 1), () {
+            battleManager.enemyAttack();
+            setState(() {
+              battleManager.playerTurn = true;
+            });
+          });
+        }
+      });
+    });
+  }
+
   Widget _buildPartyStats() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +258,12 @@ class _BattleOverlayState extends State<BattleOverlay> {
                   '${member.name} (Lvl ${member.stats.level})',
                   style: const TextStyle(color: Colors.white),
                 ),
-                HealthBar(hp: member.currentHP, label: 'HP'),
+                HealthBar(
+                  hp: member.currentHP,
+                  maxHp: member.stats.maxHp.toInt(),
+                  label: 'HP',
+                ),
+
                 const SizedBox(height: 8),
               ],
             );
@@ -290,7 +299,11 @@ class _BattleOverlayState extends State<BattleOverlay> {
                   '${battleManager.enemy.name} (Lvl ${battleManager.enemy.level})',
                   style: const TextStyle(color: Colors.white),
                 ),
-                HealthBar(hp: battleManager.enemy.currentHP, label: 'Enemy HP'),
+                HealthBar(
+                  hp: battleManager.enemy.currentHP,
+                  maxHp: battleManager.enemy.stats.maxHp.toInt(),
+                  label: 'Enemy HP',
+                ),
                 const SizedBox(height: 16),
                 _buildPartyStats(),
                 const SizedBox(height: 24),
@@ -303,6 +316,10 @@ class _BattleOverlayState extends State<BattleOverlay> {
                       textAlign: TextAlign.center,
                     ),
                   ),
+                Text(
+                  'Turn: ${battleManager.party[turnIndex].name}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
 
                 if (battleManager.battleEnded)
                   Text(
@@ -362,10 +379,11 @@ class _BattleOverlayState extends State<BattleOverlay> {
   Widget _buildItemMenu() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.generate(items.length, (i) {
+      children: List.generate(mainInventory.length, (i) {
         final selected = i == selectedIndex;
+        final item = mainInventory[i];
         return Text(
-          '${selected ? '▶' : '  '} ${items[i]}',
+          '${selected ? '▶' : '  '} ${item.name}',
           style: TextStyle(
             color: selected ? Colors.amber : Colors.white,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
