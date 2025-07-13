@@ -95,10 +95,12 @@
 // }
 
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game/main.dart';
 import 'package:game/services/settings_service.dart';
+import 'package:game/widgets/touch_overlay.dart';
 import 'package:gamepads/gamepads.dart';
 
 class StartMenu extends StatefulWidget {
@@ -306,28 +308,34 @@ class _StartMenuState extends State<StartMenu> {
       );
     }
 
-    return Material(
-      color: Colors.black,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(options.length, (i) {
-            final selected = i == selectedIndex;
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                '${selected ? '▶' : '  '} ${options[i]}',
-                style: TextStyle(
-                  fontSize: 24,
-                  color: selected ? Colors.amber : Colors.white,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            );
-          }),
+    return Stack(
+      children: [
+        Material(
+          color: Colors.black,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(options.length, (i) {
+                final selected = i == selectedIndex;
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    '${selected ? '▶' : '  '} ${options[i]}',
+                    style: TextStyle(
+                      fontSize: 24,
+                      color: selected ? Colors.amber : Colors.white,
+                      fontWeight:
+                          selected ? FontWeight.bold : FontWeight.normal,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
         ),
-      ),
+        if (Platform.isAndroid) StartControls(onInput: _handleInput),
+      ],
     );
   }
 }

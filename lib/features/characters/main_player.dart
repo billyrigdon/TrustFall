@@ -436,4 +436,13 @@ class MainPlayer extends SpriteAnimationComponent
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('$name-hp', currentHP);
   }
+
+  void handleTouchInput(String label, bool isPressed) {
+    if (isPressed) {
+      _activeInputs.add(label);
+    } else {
+      _activeInputs.remove(label);
+    }
+  }
+
 }
