@@ -40,12 +40,17 @@ class MainPlayer extends SpriteAnimationComponent
 
   late SpriteAnimation idleRight;
   late SpriteAnimation idleDown;
-  // late SpriteAnimation idleLeft;
+  late SpriteAnimation idleLeft;
+  late SpriteAnimation idleUp;
   late SpriteAnimation idleAnimation;
   late SpriteAnimation walkUp;
   late SpriteAnimation walkDown;
   late SpriteAnimation walkLeft;
   late SpriteAnimation walkRight;
+  late SpriteAnimation walkUpRight;
+  late SpriteAnimation walkUpLeft;
+  late SpriteAnimation walkDownLeft;
+  late SpriteAnimation walkDownRight;
 
   late SpriteAnimation diagAnimation;
 
@@ -53,7 +58,7 @@ class MainPlayer extends SpriteAnimationComponent
   StreamSubscription<GamepadEvent>? _gamepadSub;
   final Set<String> _activeInputs = {};
 
-  MainPlayer() : super(size: Vector2(48, 80), anchor: Anchor.topLeft);
+  MainPlayer() : super(size: Vector2(40, 60), anchor: Anchor.topLeft);
 
   Future<void> _loadHPFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
@@ -67,7 +72,7 @@ class MainPlayer extends SpriteAnimationComponent
 
   @override
   Future<void> onLoad() async {
-    debugMode = true;
+    // debugMode = true;
 
     await settings.load();
 
@@ -81,39 +86,59 @@ class MainPlayer extends SpriteAnimationComponent
     );
 
     idleRight = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('sprite_right_1.png'),
+      await gameRef.loadSprite('main_right_1.png'),
+    ], stepTime: 1.0);
+
+    idleUp = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('main_up_1.png'),
     ], stepTime: 1.0);
 
     idleDown = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('sprite.png'),
+      await gameRef.loadSprite('main_bottom_1.png'),
     ], stepTime: 1.0);
 
-    // idleLeft = SpriteAnimation.spriteList([
-    //   // await gameRef.loadSprite('sprite_left.png'),
-    // ], stepTime: 1.0);
+    idleLeft = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('main_left_1.png'),
+    ], stepTime: 1.0);
 
     walkRight = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('sprite_right_1.png'),
-      await gameRef.loadSprite('sprite_right_2.png'),
+      await gameRef.loadSprite('main_right_1.png'),
+      // await gameRef.loadSprite('main_right_2.png'),
     ], stepTime: 0.2);
 
     walkLeft = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('sprite.png'),
-      await gameRef.loadSprite('sprite.png'),
+      await gameRef.loadSprite('main_left_1.png'),
+      // await gameRef.loadSprite('main_left_2.png'),
     ], stepTime: 0.2);
 
     walkUp = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('sprite.png'),
-      await gameRef.loadSprite('sprite.png'),
+      await gameRef.loadSprite('main_up_1.png'),
+      await gameRef.loadSprite('main_up_2.png'),
     ], stepTime: 0.2);
 
     walkDown = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('sprite.png'),
-      await gameRef.loadSprite('sprite.png'),
+      await gameRef.loadSprite('main_bottom_1.png'),
+      await gameRef.loadSprite('main_bottom_2.png'),
     ], stepTime: 0.2);
 
-    diagAnimation = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('sprite_bottom_right_1.png'),
+    walkUpRight = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('main_top_right_1.png'),
+      // await gameRef.loadSprite('main_up_right_2.png'),
+    ], stepTime: 0.2);
+
+    walkUpLeft = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('main_top_left_1.png'),
+      // await gameRef.loadSprite('main_up_left_2.png'),
+    ], stepTime: 0.2);
+
+    walkDownRight = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('main_bottom_right_1.png'),
+      // await gameRef.loadSprite('main_down_right_2.png'),
+    ], stepTime: 0.2);
+
+    walkDownLeft = SpriteAnimation.spriteList([
+      await gameRef.loadSprite('main_bottom_left_1.png'),
+      // await gameRef.loadSprite('main_down_left_2.png'),
     ], stepTime: 0.2);
 
     idleAnimation = idleDown;
@@ -198,7 +223,33 @@ class MainPlayer extends SpriteAnimationComponent
     if (pressingLeft) moveDirection.x -= 1;
     if (pressingRight) moveDirection.x += 1;
 
-    if (moveDirection.x > 0) {
+    // if (moveDirection.x > 0) {
+    //   lastDirection = 'right';
+    //   animation = walkRight;
+    // } else if (moveDirection.x < 0) {
+    //   lastDirection = 'left';
+    //   animation = walkLeft;
+    // } else if (moveDirection.y > 0) {
+    //   lastDirection = 'down';
+    //   animation = walkDown;
+    // } else if (moveDirection.y < 0) {
+    //   lastDirection = 'up';
+    //   animation = walkUp;
+    // }
+
+    if (moveDirection.x > 0 && moveDirection.y < 0) {
+      lastDirection = 'upRight';
+      animation = walkUpRight;
+    } else if (moveDirection.x < 0 && moveDirection.y < 0) {
+      lastDirection = 'upLeft';
+      animation = walkUpLeft;
+    } else if (moveDirection.x > 0 && moveDirection.y > 0) {
+      lastDirection = 'downRight';
+      animation = walkDownRight;
+    } else if (moveDirection.x < 0 && moveDirection.y > 0) {
+      lastDirection = 'downLeft';
+      animation = walkDownLeft;
+    } else if (moveDirection.x > 0) {
       lastDirection = 'right';
       animation = walkRight;
     } else if (moveDirection.x < 0) {
@@ -221,13 +272,13 @@ class MainPlayer extends SpriteAnimationComponent
       // 😌 Idle animations based on last direction
       switch (lastDirection) {
         case 'left':
-          // animation = idleLeft;
+          animation = idleLeft;
           break;
         case 'right':
           animation = idleRight;
           break;
         case 'up':
-          // animation = idleUp;
+          animation = idleUp;
           break;
         case 'down':
         default:

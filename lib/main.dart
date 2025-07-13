@@ -114,7 +114,7 @@ class TrustFall extends FlameGame
     // final zoom = zoomX < zoomY ? zoomX : zoomY;
 
     // camera.viewfinder.zoom = zoom;
-    camera.viewport = FixedResolutionViewport(resolution: Vector2(640, 360));
+    camera.viewport = FixedResolutionViewport(resolution: Vector2(640, 384));
     // Calculate visible world area based on zoom (this becomes your acre size)
     final visibleWidth = size.x;
     final visibleHeight = size.y;
@@ -216,17 +216,33 @@ class TrustFall extends FlameGame
     }
   }
 
+  // Vector2 _getAcreFor(Vector2 position) {
+  //   final x = (position.x / acreSize.x).floorToDouble();
+  //   final y = (position.y / acreSize.y).floorToDouble();
+  //   return Vector2(x, y);
+  // }
+
+  // Vector2 _getCameraPositionFor(Vector2 acre) {
+  //   return Vector2(
+  //     (acre.x * acreSize.x) + acreSize.x / 2,
+  //     (acre.y * acreSize.y) + acreSize.y / 2,
+  //   );
+  // }
+
+  /// Gets the top-left acre the player is currently in
   Vector2 _getAcreFor(Vector2 position) {
     final x = (position.x / acreSize.x).floorToDouble();
     final y = (position.y / acreSize.y).floorToDouble();
     return Vector2(x, y);
   }
 
+  /// Returns the camera position that centers on the entire room (acre),
+  /// regardless of the player's position in that room.
   Vector2 _getCameraPositionFor(Vector2 acre) {
-    return Vector2(
-      (acre.x * acreSize.x) + acreSize.x / 2,
-      (acre.y * acreSize.y) + acreSize.y / 2,
-    );
+    // Instead of using the center of the acre, return the center of the room's full dimensions
+    final topLeft = Vector2(acre.x * acreSize.x, acre.y * acreSize.y);
+    final center = topLeft + acreSize / 2;
+    return center;
   }
 
   void togglePause() {
