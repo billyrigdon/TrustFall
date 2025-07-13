@@ -1,3 +1,4 @@
+import 'package:flame/camera.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/experimental.dart';
@@ -79,37 +80,55 @@ class TrustFall extends FlameGame
 
   @override
   Future<void> onLoad() async {
-    final map = await TiledComponent.load('test_map.tmx', Vector2.all(32));
-    player = MainPlayer()..position = Vector2(0, 0);
-    player.position = Vector2(900, 300);
+    final map = await TiledComponent.load('living_room.tmx', Vector2.all(32));
+    final tileMap = map.tileMap.map;
 
-    world = World()..addAll([map, player]);
-    // camera.follow(player);
+    final tileWidth = tileMap.tileWidth.toDouble();
+    final tileHeight = tileMap.tileHeight.toDouble();
+    final mapWidth = tileMap.width * tileMap.tileWidth;
+    final mapHeight = tileMap.height * tileMap.tileHeight;
 
-    // final mapWidth = map.tileMap.map.width * map.tileMap.map.tileWidth;
-    // final mapHeight = map.tileMap.map.height * map.tileMap.map.tileHeight;
-    // camera.setBounds(
-    //   Rectangle.fromLTWH(0, 0, mapWidth.toDouble(), mapHeight.toDouble()),
-    // );
+    final tileMapWidth = mapWidth.toDouble();
+    final tileMapHeight = mapHeight.toDouble();
 
-    // Set acre size (same size as screen for now)
-    acreSize = Vector2(size.x * 0.9, size.y);
+    // Add the map to the world first
+    world = World()..add(map);
+    add(world);
+
+    // Calculate zoom so the map fills the screen
+    // final zoomX = size.x / tileMapWidth;
+    // final zoomY = size.y / tileMapHeight;
+    // final zoom = zoomX < zoomY ? zoomX : zoomY;
+
+    // camera.viewfinder.zoom = zoom;
+    camera.viewport = FixedResolutionViewport(resolution: Vector2(640, 360));
+    // Calculate visible world area based on zoom (this becomes your acre size)
+    final visibleWidth = size.x;
+    final visibleHeight = size.y;
+    acreSize = Vector2(visibleWidth, visibleHeight);
+
+    // Initialize player in center of map
+    player =
+        MainPlayer()..position = Vector2(tileMapWidth / 2, tileMapHeight / 2);
+    world.add(player);
+
+    // Set camera bounds to prevent black edges
+    camera.setBounds(Rectangle.fromLTWH(0, 0, tileMapWidth, tileMapHeight));
+
+    // Position camera on player's acre, clamped inside bounds
     currentAcre = _getAcreFor(player.position);
+    final target = _getCameraPositionFor(currentAcre);
 
-    camera.viewfinder.position = _getCameraPositionFor(currentAcre);
+    final clampedX = _clampCameraAxis(target.x, visibleWidth, tileMapWidth);
+    final clampedY = _clampCameraAxis(target.y, visibleHeight, tileMapHeight);
 
-    final mapWidth = map.tileMap.map.width * map.tileMap.map.tileWidth;
-    final mapHeight = map.tileMap.map.height * map.tileMap.map.tileHeight;
-    camera.setBounds(
-      Rectangle.fromLTWH(0, 0, mapWidth.toDouble(), mapHeight.toDouble()),
-    );
+    camera.viewfinder.position = Vector2(clampedX, clampedY);
 
+    // Load collision walls from Collisions layer
     final tileLayer = map.tileMap.getLayer<TileLayer>('Collisions');
     if (tileLayer != null && tileLayer.tileData != null) {
       final tileData = tileLayer.tileData!;
-      final tileWidth = map.tileMap.map.tileWidth.toDouble();
-      final tileHeight = map.tileMap.map.tileHeight.toDouble();
-      final tilesets = map.tileMap.map.tilesets;
+      final tilesets = tileMap.tilesets;
 
       for (int y = 0; y < tileData.length; y++) {
         final row = tileData[y];
@@ -117,20 +136,19 @@ class TrustFall extends FlameGame
           final gid = row[x];
           final tileId = gid.tile;
 
-          if (tileId == 0) continue; // skip empty
+          if (tileId == 0) continue;
 
-          // Find the tileset that owns this tileId
           final tileset = tilesets.firstWhere((set) {
             final firstGid = set.firstGid;
             final tileCount = set.tileCount ?? 0;
-            if (firstGid == null) return false;
-            return tileId >= firstGid && tileId < firstGid + tileCount;
+            return firstGid != null &&
+                tileId >= firstGid &&
+                tileId < firstGid + tileCount;
           });
 
           if (tileset == null || tileset.firstGid == null) continue;
 
           final localId = tileId - tileset.firstGid!;
-
           final tile = tileset.tiles.firstWhere((t) => t.localId == localId);
 
           final isCollidable =
@@ -148,6 +166,97 @@ class TrustFall extends FlameGame
       }
     }
   }
+
+  double _clampCameraAxis(double target, double visible, double maxMap) {
+    if (visible >= maxMap) {
+      return maxMap / 2; // center the camera on small maps
+    }
+    final min = visible / 2;
+    final max = maxMap - visible / 2;
+    return target.clamp(min, max);
+  }
+
+  double _calculateZoomToFillMap(mapWidth, mapHeight) {
+    // final mapWidth = world.size.x;
+    // final mapHeight = world.size.y;
+
+    final zoomX = size.x / mapWidth;
+    final zoomY = size.y / mapHeight;
+
+    return zoomX < zoomY ? zoomX : zoomY; // Fit screen inside map
+  }
+
+  // @override
+  // Future<void> onLoad() async {
+  //   final map = await TiledComponent.load('living_room.tmx', Vector2.all(48));
+  //   player = MainPlayer()..position = Vector2(0, 0);
+  //   // player.position = Vector2(900, 300);
+
+  //   world = World()..addAll([map, player]);
+  //   // camera.follow(player);
+
+  //   // final mapWidth = map.tileMap.map.width * map.tileMap.map.tileWidth;
+  //   // final mapHeight = map.tileMap.map.height * map.tileMap.map.tileHeight;
+  //   // camera.setBounds(
+  //   //   Rectangle.fromLTWH(0, 0, mapWidth.toDouble(), mapHeight.toDouble()),
+  //   // );
+
+  //   // Set acre size (same size as screen for now)
+  //   acreSize = Vector2(size.x * 0.9, size.y);
+  //   currentAcre = _getAcreFor(player.position);
+
+  //   camera.viewfinder.position = _getCameraPositionFor(currentAcre);
+
+  //   final mapWidth = map.tileMap.map.width * map.tileMap.map.tileWidth;
+  //   final mapHeight = map.tileMap.map.height * map.tileMap.map.tileHeight;
+  //   camera.setBounds(
+  //     Rectangle.fromLTWH(0, 0, mapWidth.toDouble(), mapHeight.toDouble()),
+  //   );
+
+  //   final tileLayer = map.tileMap.getLayer<TileLayer>('Collisions');
+  //   if (tileLayer != null && tileLayer.tileData != null) {
+  //     final tileData = tileLayer.tileData!;
+  //     final tileWidth = map.tileMap.map.tileWidth.toDouble();
+  //     final tileHeight = map.tileMap.map.tileHeight.toDouble();
+  //     final tilesets = map.tileMap.map.tilesets;
+
+  //     for (int y = 0; y < tileData.length; y++) {
+  //       final row = tileData[y];
+  //       for (int x = 0; x < row.length; x++) {
+  //         final gid = row[x];
+  //         final tileId = gid.tile;
+
+  //         if (tileId == 0) continue; // skip empty
+
+  //         // Find the tileset that owns this tileId
+  //         final tileset = tilesets.firstWhere((set) {
+  //           final firstGid = set.firstGid;
+  //           final tileCount = set.tileCount ?? 0;
+  //           if (firstGid == null) return false;
+  //           return tileId >= firstGid && tileId < firstGid + tileCount;
+  //         });
+
+  //         if (tileset == null || tileset.firstGid == null) continue;
+
+  //         final localId = tileId - tileset.firstGid!;
+
+  //         final tile = tileset.tiles.firstWhere((t) => t.localId == localId);
+
+  //         final isCollidable =
+  //             tile?.properties.any(
+  //               (p) => p.name == 'collidable' && p.value == true,
+  //             ) ??
+  //             false;
+
+  //         if (isCollidable) {
+  //           final pos = Vector2(x * tileWidth, y * tileHeight);
+  //           final size = Vector2(tileWidth, tileHeight);
+  //           world.add(Wall(pos, size));
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
   @override
   void update(double dt) {
