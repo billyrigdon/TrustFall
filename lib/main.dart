@@ -7,7 +7,10 @@ import 'package:flame/input.dart';
 import 'package:flame_tiled/flame_tiled.dart';
 import 'package:flutter/material.dart';
 import 'package:game/features/battle/battle_overlay.dart';
+import 'package:game/features/characters/battle_character.dart';
+import 'package:game/features/characters/enemies/test_enemy.dart';
 import 'package:game/features/characters/main_player.dart';
+import 'package:game/features/characters/party/test_friend.dart';
 import 'package:game/features/menus/pause_menu.dart';
 import 'package:game/features/menus/settings_menu.dart';
 import 'package:game/features/menus/start_menu.dart';
@@ -45,8 +48,14 @@ void main() async {
           overlayBuilderMap: {
             'TextBox': (context, game) => const TrustFallTextBox(),
             'PauseMenu': (context, game) => const PauseMenu(),
-            'BattleOverlay':
-                (context, game) => BattleOverlay(game: game as TrustFall),
+            'BattleOverlay': (context, game) {
+              final trustFall = game as TrustFall;
+              return BattleOverlay(
+                game: trustFall,
+                party: trustFall.currentParty,
+                enemy: trustFall.currentEnemy,
+              );
+            },
             'StartMenu': (context, game) => StartMenu(game: game as TrustFall),
             'SettingsMenu':
                 (context, game) => SettingsMenu(game: game as TrustFall),
@@ -61,6 +70,8 @@ void main() async {
 class TrustFall extends FlameGame
     with HasKeyboardHandlerComponents, HasCollisionDetection {
   late final MainPlayer player;
+  List<BattleCharacter> currentParty = [];
+  late Enemy currentEnemy;
   bool isPaused = false;
 
   bool inBattle = false;
@@ -68,7 +79,11 @@ class TrustFall extends FlameGame
   late Vector2 acreSize;
   late Vector2 currentAcre;
 
-  void startBattle() {
+  void startBattle(List<BattleCharacter> party, Enemy enemy) {
+    currentParty = party;
+
+    currentEnemy = enemy;
+
     inBattle = true;
     overlays.add('BattleOverlay');
   }

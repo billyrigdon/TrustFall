@@ -3,106 +3,42 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game/features/battle/battle_manager.dart';
+import 'package:game/features/characters/battle_character.dart';
+import 'package:game/features/characters/enemies/test_enemy.dart' as game_enemy;
+import 'package:game/features/characters/main_player.dart';
+import 'package:game/features/characters/party/test_friend.dart';
 import 'package:game/main.dart';
+import 'package:game/services/attacks.dart';
+import 'package:game/services/character_stats.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:game/widgets/health_bar.dart';
 import 'package:gamepads/gamepads.dart';
 
 class BattleOverlay extends StatefulWidget {
   final TrustFall game;
-  const BattleOverlay({super.key, required this.game});
+  final List<BattleCharacter> party;
+  final game_enemy.Enemy enemy;
+
+  BattleOverlay({
+    super.key,
+    required this.game,
+    required this.party,
+    required this.enemy,
+  });
 
   @override
   State<BattleOverlay> createState() => _BattleOverlayState();
 }
 
-// class _BattleOverlayState extends State<BattleOverlay> {
-//   final BattleManager battleManager = BattleManager();
-//   int selectedIndex = 0;
-//   bool itemMenuOpen = false;
-
-//   final List<String> commands = ['Attack', 'Items', 'Run'];
-//   final List<String> items = ['Burger', 'Cola'];
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     battleManager.reset();
-//     RawKeyboard.instance.addListener(_onKey);
-//   }
-
-//   @override
-//   void dispose() {
-//     RawKeyboard.instance.removeListener(_onKey);
-//     super.dispose();
-//   }
-
-//   void _onKey(RawKeyEvent event) {
-//     if (!battleManager.playerTurn || battleManager.battleEnded) return;
-
-//     if (event is RawKeyDownEvent) {
-//       final key = event.logicalKey;
-//       final rowCount = itemMenuOpen ? items.length : 2;
-
-//       if (key == LogicalKeyboardKey.arrowRight && !itemMenuOpen) {
-//         setState(() => selectedIndex = (selectedIndex + 1) % commands.length);
-//       } else if (key == LogicalKeyboardKey.arrowLeft && !itemMenuOpen) {
-//         setState(
-//           () =>
-//               selectedIndex =
-//                   (selectedIndex - 1 + commands.length) % commands.length,
-//         );
-//       } else if (key == LogicalKeyboardKey.arrowDown && itemMenuOpen) {
-//         setState(() => selectedIndex = (selectedIndex + 1) % items.length);
-//       } else if (key == LogicalKeyboardKey.arrowUp && itemMenuOpen) {
-//         setState(
-//           () =>
-//               selectedIndex = (selectedIndex - 1 + items.length) % items.length,
-//         );
-//       } else if (key == LogicalKeyboardKey.enter ||
-//           key == LogicalKeyboardKey.space) {
-//         _handleSelection();
-//       }
-//     }
-//   }
-
-//   void _handleSelection() {
-//     if (itemMenuOpen) {
-//       battleManager.useItem(items[selectedIndex]);
-//       setState(() {
-//         itemMenuOpen = false;
-//         selectedIndex = 0;
-//       });
-//     } else {
-//       switch (commands[selectedIndex]) {
-//         case 'Attack':
-//           battleManager.attackEnemy();
-//           break;
-//         case 'Items':
-//           setState(() {
-//             itemMenuOpen = true;
-//             selectedIndex = 0;
-//           });
-//           break;
-//         case 'Run':
-//           battleManager.battleEnded = true;
-//           WidgetsBinding.instance.addPostFrameCallback((_) {
-//             if (mounted) widget.game.endBattle();
-//           });
-//           break;
-//       }
-//     }
-//   }
-
-// }
-
 class _BattleOverlayState extends State<BattleOverlay> {
-  final BattleManager battleManager = BattleManager();
+  late final BattleManager battleManager;
   int selectedIndex = 0;
   bool itemMenuOpen = false;
-
+  bool attackMenuOpen = false;
+  int attackIndex = 0;
   final List<String> commands = ['Attack', 'Items', 'Run'];
   final List<String> items = ['Burger', 'Cola'];
+  String? battleMessage;
 
   StreamSubscription<GamepadEvent>? _gamepadSub;
   final SettingsService settings = SettingsService();
@@ -110,7 +46,10 @@ class _BattleOverlayState extends State<BattleOverlay> {
   @override
   void initState() {
     super.initState();
+
+    battleManager = BattleManager(party: widget.party, enemy: widget.enemy);
     battleManager.reset();
+
     RawKeyboard.instance.addListener(_onKey);
     _gamepadSub = Gamepads.events.listen(_onGamepad);
   }
@@ -167,9 +106,9 @@ class _BattleOverlayState extends State<BattleOverlay> {
     final isAction =
         inputLabel == action || inputLabel == 'Enter' || inputLabel == 'Space';
 
-    if (isRight && !itemMenuOpen) {
+    if (isRight && !itemMenuOpen && !attackMenuOpen) {
       setState(() => selectedIndex = (selectedIndex + 1) % commands.length);
-    } else if (isLeft && !itemMenuOpen) {
+    } else if (isLeft && !itemMenuOpen && !attackMenuOpen) {
       setState(
         () =>
             selectedIndex =
@@ -181,22 +120,108 @@ class _BattleOverlayState extends State<BattleOverlay> {
       setState(
         () => selectedIndex = (selectedIndex - 1 + items.length) % items.length,
       );
+    } else if (isDown && attackMenuOpen) {
+      final currentChar = battleManager.party.first;
+      setState(
+        () => attackIndex = (attackIndex + 1) % currentChar.attacks.length,
+      );
+    } else if (isUp && attackMenuOpen) {
+      final currentChar = battleManager.party.first;
+      setState(
+        () =>
+            attackIndex =
+                (attackIndex - 1 + currentChar.attacks.length) %
+                currentChar.attacks.length,
+      );
     } else if (isAction) {
       _handleSelection();
     }
   }
 
   void _handleSelection() {
+    final currentChar = battleManager.party.first;
+
     if (itemMenuOpen) {
-      battleManager.useItem(items[selectedIndex]);
+      battleManager.useItemOn(currentChar, items[selectedIndex]);
       setState(() {
         itemMenuOpen = false;
         selectedIndex = 0;
+        battleMessage = '${currentChar.name} used ${items[selectedIndex]}!';
+      });
+    } else if (attackMenuOpen) {
+      final attack = currentChar.attacks[attackIndex];
+      final damage = (currentChar.stats.strength * attack.power).toInt();
+      widget.enemy.takeDamage(damage);
+
+      setState(() {
+        battleMessage =
+            '${currentChar.name} used ${attack.name}! '
+            'It did $damage damage!';
+      });
+
+      Future.delayed(const Duration(seconds: 1), () {
+        if (!widget.enemy.isAlive) {
+          setState(() {
+            battleMessage = '${widget.enemy.name} was defeated!';
+          });
+
+          Future.delayed(const Duration(seconds: 1), () {
+            // Grant XP to each party member
+            for (final member in battleManager.party) {
+              member.gainXpFromEnemy(
+                baseXp: 50,
+                enemyLevel: widget.enemy.level,
+              );
+            }
+
+            setState(() {
+              battleMessage = 'Victory!\nEveryone gained XP!';
+              battleManager.battleEnded = true;
+            });
+
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) widget.game.endBattle();
+            });
+          });
+        } else {
+          setState(() {
+            battleMessage = '${widget.enemy.name} is attacking!';
+          });
+
+          Future.delayed(const Duration(seconds: 1), () {
+            battleManager.enemyAttack();
+
+            // Check for game over
+            if (battleManager.party.every((c) => !c.isAlive)) {
+              setState(() {
+                battleMessage = 'You were defeated...';
+                battleManager.battleEnded = true;
+              });
+
+              Future.delayed(const Duration(seconds: 2), () {
+                if (mounted) widget.game.endBattle();
+              });
+            } else {
+              setState(() {
+                battleMessage = null;
+                battleManager.playerTurn = true;
+              });
+            }
+          });
+        }
+      });
+
+      setState(() {
+        attackMenuOpen = false;
+        attackIndex = 0;
       });
     } else {
       switch (commands[selectedIndex]) {
         case 'Attack':
-          battleManager.attackEnemy();
+          setState(() {
+            attackMenuOpen = true;
+            attackIndex = 0;
+          });
           break;
         case 'Items':
           setState(() {
@@ -205,13 +230,36 @@ class _BattleOverlayState extends State<BattleOverlay> {
           });
           break;
         case 'Run':
-          battleManager.battleEnded = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() {
+            battleManager.battleEnded = true;
+            battleMessage = '${currentChar.name} ran away!';
+          });
+          Future.delayed(const Duration(seconds: 1), () {
             if (mounted) widget.game.endBattle();
           });
           break;
       }
     }
+  }
+
+  Widget _buildPartyStats() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children:
+          battleManager.party.map((member) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${member.name} (Lvl ${member.stats.level})',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                HealthBar(hp: member.currentHP, label: 'HP'),
+                const SizedBox(height: 8),
+              ],
+            );
+          }).toList(),
+    );
   }
 
   @override
@@ -231,27 +279,36 @@ class _BattleOverlayState extends State<BattleOverlay> {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  '''
-     /\\___/\\
-    ( o   o )
-    (  =^=  )
-    (        )
-    (         )
-    (          ))))))))''',
-                  style: TextStyle(
-                    color: Colors.redAccent,
-                    fontFamily: 'monospace',
-                  ),
+                SizedBox(
+                  height: 64,
+                  width: 64,
+                  child: widget.enemy.imageWidget,
                 ),
+
+                const SizedBox(height: 8),
+                Text(
+                  '${battleManager.enemy.name} (Lvl ${battleManager.enemy.level})',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                HealthBar(hp: battleManager.enemy.currentHP, label: 'Enemy HP'),
                 const SizedBox(height: 16),
-                HealthBar(label: 'Enemy HP', hp: battleManager.enemyHP),
-                const SizedBox(height: 16),
-                HealthBar(label: 'Your HP', hp: battleManager.playerHP),
+                _buildPartyStats(),
                 const SizedBox(height: 24),
+                if (battleMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      battleMessage!,
+                      style: const TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
                 if (battleManager.battleEnded)
                   Text(
-                    battleManager.playerHP == 0 ? 'You lost!' : 'You won!',
+                    battleManager.party.any((c) => c.isAlive)
+                        ? 'You won!'
+                        : 'You lost!',
                     style: const TextStyle(color: Colors.white, fontSize: 20),
                   )
                 else if (!battleManager.playerTurn)
@@ -270,68 +327,81 @@ class _BattleOverlayState extends State<BattleOverlay> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child:
-                        itemMenuOpen
-                            ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: List.generate(items.length, (i) {
-                                final selected = i == selectedIndex;
-                                return Text(
-                                  '${selected ? '▶' : '  '} ${items[i]}',
-                                  style: TextStyle(
-                                    color:
-                                        selected ? Colors.amber : Colors.white,
-                                    fontWeight:
-                                        selected
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                  ),
-                                );
-                              }),
-                            )
-                            : GridView.count(
-                              shrinkWrap: true,
-                              crossAxisCount: 2,
-                              childAspectRatio: 3.5,
-                              mainAxisSpacing: 4,
-                              crossAxisSpacing: 4,
-                              children: List.generate(commands.length, (i) {
-                                final selected = i == selectedIndex;
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color:
-                                          selected
-                                              ? Colors.amber
-                                              : Colors.white,
-                                    ),
-                                    borderRadius: BorderRadius.circular(6),
-                                    color: Colors.black,
-                                  ),
-                                  padding: const EdgeInsets.all(6),
-                                  child: Center(
-                                    child: Text(
-                                      commands[i],
-                                      style: TextStyle(
-                                        color:
-                                            selected
-                                                ? Colors.amber
-                                                : Colors.white,
-                                        fontWeight:
-                                            selected
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
+                        attackMenuOpen
+                            ? _buildAttackMenu()
+                            : itemMenuOpen
+                            ? _buildItemMenu()
+                            : _buildMainMenu(),
                   ),
               ],
             );
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildAttackMenu() {
+    final currentChar = battleManager.party.first;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List.generate(currentChar.attacks.length, (i) {
+        final attack = currentChar.attacks[i];
+        final selected = i == attackIndex;
+        return Text(
+          '${selected ? '▶' : '  '} ${attack.name} (${(currentChar.stats.strength * attack.power).toInt()} dmg)',
+          style: TextStyle(
+            color: selected ? Colors.amber : Colors.white,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildItemMenu() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List.generate(items.length, (i) {
+        final selected = i == selectedIndex;
+        return Text(
+          '${selected ? '▶' : '  '} ${items[i]}',
+          style: TextStyle(
+            color: selected ? Colors.amber : Colors.white,
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildMainMenu() {
+    return GridView.count(
+      shrinkWrap: true,
+      crossAxisCount: 2,
+      childAspectRatio: 3.5,
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
+      children: List.generate(commands.length, (i) {
+        final selected = i == selectedIndex;
+        return Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: selected ? Colors.amber : Colors.white),
+            borderRadius: BorderRadius.circular(6),
+            color: Colors.black,
+          ),
+          padding: const EdgeInsets.all(6),
+          child: Center(
+            child: Text(
+              commands[i],
+              style: TextStyle(
+                color: selected ? Colors.amber : Colors.white,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }
