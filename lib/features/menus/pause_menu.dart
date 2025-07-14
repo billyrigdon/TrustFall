@@ -116,12 +116,48 @@ class _PauseMenuState extends State<PauseMenu> {
     }
   }
 
-  void _useItem(Item item) {
-    if (item.type == ItemType.food) {
-      widget.player.heal(item.value ?? 0);
-      setState(() {
-        widget.player.removeItem(item);
-      });
+  void _useItem(Item item) async {
+    final List<BattleCharacter> party = [
+      widget.player,
+      ...widget.player.currentParty,
+    ];
+
+    if (item.isConsumable) {
+      final selected = await showDialog<BattleCharacter>(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              backgroundColor: Colors.black,
+              title: const Text(
+                'Use on who?',
+                style: TextStyle(color: Colors.white),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children:
+                    party.map((member) {
+                      return ListTile(
+                        title: Text(
+                          member.name,
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        subtitle: Text(
+                          'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
+                          style: const TextStyle(color: Colors.white54),
+                        ),
+                        onTap: () => Navigator.pop(context, member),
+                      );
+                    }).toList(),
+              ),
+            ),
+      );
+
+      if (selected != null) {
+        setState(() {
+          selected.heal(item.value ?? 0);
+          widget.player.removeItem(item);
+        });
+      }
     }
   }
 

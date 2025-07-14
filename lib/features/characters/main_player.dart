@@ -410,7 +410,13 @@ class MainPlayer extends SpriteAnimationComponent
 
     if (raw == null || raw.isEmpty) {
       inventory = [
-        Item(name: 'Cookie', type: ItemType.food, damage: 1, price: 5),
+        Item(
+          name: 'Cookie',
+          type: ItemType.food,
+          damage: 1,
+          price: 5,
+          value: 50,
+        ),
         Item(name: 'Stabilizer', type: ItemType.medicine, damage: 1, price: 10),
         Item(name: 'Toy', type: ItemType.keyItem, damage: 3, price: 5),
         Item(name: 'Plushie', type: ItemType.keyItem, damage: 1, price: 15),
