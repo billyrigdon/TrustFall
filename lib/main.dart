@@ -92,7 +92,7 @@ class TrustFall extends FlameGame
     switch (loader) {
       case 'mainPlayerHouse':
       default:
-        add(MainPlayerHouse(MainPlayerHouseRoom.livingRoom));
+        add(MainPlayerHouse(MainPlayerHouseRoom.living_room));
     }
   }
 

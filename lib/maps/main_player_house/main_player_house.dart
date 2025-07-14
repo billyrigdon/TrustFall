@@ -19,20 +19,24 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
   Vector2? doorSpawnCoordinates;
   final Map<String, Vector2> spawnPoints = {};
 
-  String fromDirection = '';
+  String fromOrientation = '';
 
-  String fromRoom = '';
+  // String fromRoom = '';
   @override
   Future<void> onLoad() async {
     debugMode = true;
     super.onLoad();
-    await _loadRoom(initialRoom, previousPosition: Vector2.zero());
+    await _loadRoom(
+      initialRoom,
+      previousPosition: Vector2.zero(),
+      fromRoom: '',
+    );
   }
 
   Vector2 _getSpawnFromDoor(Vector2 doorSpawn, Vector2 userCoordinates) {
-    if (fromDirection == 'up' || fromDirection == 'down') {
+    if (fromOrientation == 'vertical') {
       return Vector2(userCoordinates.x, doorSpawn.y);
-    } else if (fromDirection == 'left' || fromDirection == 'right') {
+    } else if (fromOrientation == 'horizontal') {
       return Vector2(doorSpawn.x, userCoordinates.y);
     } else
       return Vector2(0, 0);
@@ -73,15 +77,16 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
 
       if (hasSpawn) {
         print(obj.properties.toString());
-        fromRoom =
+        final fromRoom =
             obj.properties.firstWhere((p) => p.name == 'fromRoom').value
                 as String;
 
-        fromDirection =
-            obj.properties.firstWhere((p) => p.name == 'fromDirection').value
+        final fromOrientation =
+            obj.properties.firstWhere((p) => p.name == 'fromOrientation').value
                 as String;
 
-        final key = '$fromRoom:$fromDirection';
+        final key = '$fromRoom:$fromOrientation';
+        print(key);
         spawnPoints[key] = Vector2(obj.x, obj.y);
       }
     }
@@ -90,11 +95,12 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
   Future<void> _loadRoom(
     MainPlayerHouseRoom room, {
     required Vector2 previousPosition,
-    // String? fromRoom,
-    // String? fromDirection,
+    String? orientation,
+    required String fromRoom,
   }) async {
     final lastDirection = gameRef.player.lastDirection;
     final map = await TiledComponent.load(room.tmxFile, Vector2.all(32));
+    fromOrientation = orientation ?? 'horizontal';
     mapPixelSize = map.size;
     final world = World();
     gameRef.world = world;
@@ -132,41 +138,6 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
 
         _extractDoorSpawns(map);
 
-        // final hasSpawn = obj.properties.any(
-        //   (p) => p.name == 'spawn' && p.value == true,
-        // );
-
-        // if (hasSpawn) {
-        //   doorSpawnCoordinates = Vector2(obj.x, obj.y);
-        //   fromRoom =
-        //       obj.properties
-        //               .firstWhere(
-        //                 (p) => p.name == 'fromRoom',
-        //                 orElse:
-        //                     () => Property(
-        //                       name: '',
-        //                       type: PropertyType.string,
-        //                       value: '',
-        //                     ),
-        //               )
-        //               .value
-        //           as String;
-
-        //   fromDirection =
-        //       obj.properties
-        //               .firstWhere(
-        //                 (p) => p.name == 'fromDirection',
-        //                 orElse:
-        //                     () => Property(
-        //                       name: '',
-        //                       type: PropertyType.string,
-        //                       value: '',
-        //                     ),
-        //               )
-        //               .value
-        //           as String;
-        // }
-
         if (objType == 'door') {
           final destStr =
               obj.properties
@@ -181,9 +152,23 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
                   )
                   .value;
 
+          final orientation =
+              obj.properties
+                      .firstWhere(
+                        (p) => p.name == 'exitOrientation',
+                        orElse:
+                            () => Property(
+                              name: '',
+                              type: PropertyType.string,
+                              value: '',
+                            ),
+                      )
+                      .value
+                  as String;
+
           final destRoom = MainPlayerHouseRoom.values.firstWhere(
             (r) => r.name == destStr,
-            orElse: () => MainPlayerHouseRoom.livingRoom,
+            orElse: () => MainPlayerHouseRoom.living_room,
           );
 
           final position = Vector2(obj.x, obj.y);
@@ -191,13 +176,13 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
           world.add(
             Door(
               destRoom: destRoom,
-              // fromDirection: enterFrom,
+              orientation: orientation,
               onEnter:
                   () => _loadRoom(
                     destRoom,
                     previousPosition: gameRef.player.position,
-                    // fromRoom: room.name,
-                    // fromDirection: lastDirection,
+                    orientation: orientation,
+                    fromRoom: room.name,
                   ),
               position: position,
               size: Vector2(obj.width, obj.height),
@@ -207,28 +192,31 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
       }
     }
     _addCollisions(map);
-    // final spawn =
-    // (previousPosition == Vector2.zero())
-    // ? mapPixelSize / 2
-    // : _getSpawnFromDoor(doorSpawnCoordinates!, gameRef.player.position);
 
     late final Vector2 spawn;
 
     if (previousPosition == Vector2.zero() ||
-        fromDirection.isEmpty ||
+        fromOrientation.isEmpty ||
         fromRoom.isEmpty) {
-      spawn = mapPixelSize / 2;
+      spawn = Vector2(
+        mapPixelSize.x - 48 - 32, // near right edge
+        mapPixelSize.y - 80 - 32, // near bottom edge
+      );
     } else {
-      print('special spawn');
-      final spawnKey = '$fromRoom:$fromDirection';
+      final spawnKey = '$fromRoom:$fromOrientation';
       print(spawnKey);
-      final door = spawnPoints[spawnKey];
+      final spawnPoint = spawnPoints[spawnKey];
+      print(spawnPoint.toString());
       spawn =
-          door != null
-              ? _getSpawnFromDoor(door, gameRef.player.position)
+          spawnPoint != null
+              ? _getSpawnFromDoor(spawnPoint, gameRef.player.position)
               : mapPixelSize / 2;
     }
-
+    // fromRoom = room.name;
+    fromOrientation =
+        lastDirection == 'right' || lastDirection == 'left'
+            ? ' horizontal'
+            : 'vertical';
     final newPlayer = MainPlayer();
     newPlayer.position = spawn;
     newPlayer.lastDirection = lastDirection;
@@ -307,6 +295,7 @@ class Door extends PositionComponent with CollisionCallbacks {
     required MainPlayerHouseRoom destRoom,
     required this.onEnter,
     required Vector2 position,
+    required String orientation,
     required Vector2 size,
   }) {
     this.position = position;
