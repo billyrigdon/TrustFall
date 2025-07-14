@@ -2,10 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flame/experimental.dart';
-import 'package:flame/game.dart';
-import 'package:flame/input.dart';
-import 'package:flame_tiled/flame_tiled.dart';
 import 'package:flutter/services.dart';
 import 'package:game/features/characters/battle_character.dart';
 import 'package:game/features/characters/enemies/test_enemy.dart';
@@ -151,17 +147,6 @@ class MainPlayer extends SpriteAnimationComponent
     await loadInventory();
     await loadAttacks();
     await loadParty();
-
-    // if (currentParty.isEmpty) {
-    //   // Preload default test party
-    //   currentParty = [
-    //     PartyMember(name: 'Buddy', charClass: CharacterClass.healer),
-    //     PartyMember(name: 'Clobber', charClass: CharacterClass.berserker),
-    //     PartyMember(name: 'Talker', charClass: CharacterClass.manipulator),
-    //   ];
-
-    //   await saveParty();
-    // }
   }
 
   List<Attack> _defaultAttacks() => [
@@ -222,20 +207,6 @@ class MainPlayer extends SpriteAnimationComponent
     if (pressingDown) moveDirection.y += 1;
     if (pressingLeft) moveDirection.x -= 1;
     if (pressingRight) moveDirection.x += 1;
-
-    // if (moveDirection.x > 0) {
-    //   lastDirection = 'right';
-    //   animation = walkRight;
-    // } else if (moveDirection.x < 0) {
-    //   lastDirection = 'left';
-    //   animation = walkLeft;
-    // } else if (moveDirection.y > 0) {
-    //   lastDirection = 'down';
-    //   animation = walkDown;
-    // } else if (moveDirection.y < 0) {
-    //   lastDirection = 'up';
-    //   animation = walkUp;
-    // }
 
     if (moveDirection.x > 0 && moveDirection.y < 0) {
       lastDirection = 'upRight';
@@ -407,7 +378,7 @@ class MainPlayer extends SpriteAnimationComponent
         if (input == action) _activeInputs.add(input);
         if (input == talk) gameRef.showTextBox();
         if (input == pause) gameRef.togglePause();
-        if (input == battle && !gameRef.inBattle)
+        if (input == battle && !gameRef.inBattle) {
           gameRef.startBattle(
             [this, ...currentParty],
             Enemy(
@@ -423,6 +394,7 @@ class MainPlayer extends SpriteAnimationComponent
               ],
             ),
           );
+        }
       } else if (event.value == 0.0) {
         _activeInputs.remove(input);
       }
@@ -460,7 +432,6 @@ class MainPlayer extends SpriteAnimationComponent
           }).toList();
     }
 
-    // 🪙 Ensure currency is always present
     final existingCurrency = inventory.firstWhere(
       (item) => item.type == ItemType.currency,
       orElse:
@@ -545,14 +516,14 @@ class MainPlayer extends SpriteAnimationComponent
   void addToParty(PartyMember member) {
     if (!currentParty.any((m) => m.name == member.name)) {
       currentParty.add(member);
-      saveParty(); // save after adding
+      saveParty();
     }
   }
 
   @override
   void clearParty() {
     currentParty.clear();
-    saveParty(); // save after clearing
+    saveParty();
   }
 
   @override
@@ -563,16 +534,14 @@ class MainPlayer extends SpriteAnimationComponent
     currentParty =
         rawList.map((jsonStr) {
           final data = jsonDecode(jsonStr) as Map<String, dynamic>;
-          return PartyMember.fromJson(
-            data,
-          ); // assumes PartyMember.fromJson exists
+          return PartyMember.fromJson(data);
         }).toList();
   }
 
   @override
   void removeFromParty(String name) {
     currentParty.removeWhere((m) => m.name == name);
-    saveParty(); // save after removal
+    saveParty();
   }
 
   @override

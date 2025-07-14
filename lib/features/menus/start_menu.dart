@@ -18,7 +18,6 @@ class StartMenu extends StatefulWidget {
 class _StartMenuState extends State<StartMenu> {
   int selectedIndex = 0;
   final List<String> options = ['New Game', 'Load Game', 'Settings', 'Exit'];
-  // late final SettingsService settings;
   final SettingsService settings = SettingsService();
 
   StreamSubscription<GamepadEvent>? _gamepadSub;
