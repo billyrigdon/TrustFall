@@ -85,7 +85,7 @@ class TrustFall extends FlameGame
 
   @override
   Future<void> onLoad() async {
-    player = MainPlayer(); // create early!
+    player = MainPlayer();
     final prefs = await SharedPreferences.getInstance();
     final loader = prefs.getString('currentLoader') ?? 'mainPlayerHouse';
 
@@ -120,12 +120,21 @@ class TrustFall extends FlameGame
   }
 }
 
+// class Wall extends PositionComponent with CollisionCallbacks {
+//   Wall(Vector2 position, Vector2 size) {
+//     this.position = position;
+//     this.size = size;
+//     add(
+//       RectangleHitbox()..collisionType = CollisionType.passive, // important!
+//     );
+//   }
+// }
 class Wall extends PositionComponent with CollisionCallbacks {
-  Wall(Vector2 position, Vector2 size) {
-    this.position = position;
-    this.size = size;
-    add(
-      RectangleHitbox()..collisionType = CollisionType.passive, // important!
-    );
+  Wall(Vector2 pos, Vector2 size)
+    : super(position: pos, size: size, anchor: Anchor.topLeft);
+
+  @override
+  Future<void> onLoad() async {
+    add(RectangleHitbox());
   }
 }
