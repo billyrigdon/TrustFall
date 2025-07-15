@@ -85,10 +85,40 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
             obj.properties.firstWhere((p) => p.name == 'fromOrientation').value
                 as String;
 
-        final key = '$fromRoom:$fromOrientation';
+        final isSpecial = obj.properties.any(
+          (p) => p.name == 'special_spawn' && p.value == true,
+        );
+
+        // final key = '$fromRoom:$fromOrientation';
+
+        final key = '$fromRoom:$fromOrientation${isSpecial ? ':special' : ''}';
         print(key);
         spawnPoints[key] = Vector2(obj.x, obj.y);
       }
+    }
+  }
+
+  Vector2 getSpawnPoint({
+    required String fromRoom,
+    required String orientation,
+    required Vector2 userCoordinates,
+  }) {
+    final specialKey = '$fromRoom:$orientation:special';
+    final normalKey = '$fromRoom:$orientation';
+    print('spawning');
+    if (spawnPoints.containsKey(specialKey)) {
+      print('spawning special');
+      return spawnPoints[specialKey]!;
+    }
+
+    final doorSpawn = spawnPoints[normalKey] ?? Vector2.zero();
+
+    if (orientation == 'vertical') {
+      return Vector2(userCoordinates.x, doorSpawn.y);
+    } else if (orientation == 'horizontal') {
+      return Vector2(doorSpawn.x, userCoordinates.y);
+    } else {
+      return Vector2.zero();
     }
   }
 
@@ -203,13 +233,17 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
         mapPixelSize.y - 80 - 32, // near bottom edge
       );
     } else {
-      final spawnKey = '$fromRoom:$fromOrientation';
-      print(spawnKey);
-      final spawnPoint = spawnPoints[spawnKey];
-      print(spawnPoint.toString());
+      // final spawnKey = '$fromRoom:$fromOrientation';
+      // print(spawnKey);
+      // final spawnPoint = spawnPoints[spawnKey];
+      // print(spawnPoint.toString());
       spawn =
-          spawnPoint != null
-              ? _getSpawnFromDoor(spawnPoint, gameRef.player.position)
+          fromRoom.isNotEmpty
+              ? getSpawnPoint(
+                fromRoom: fromRoom,
+                orientation: fromOrientation,
+                userCoordinates: gameRef.player.position,
+              )
               : mapPixelSize / 2;
     }
     // fromRoom = room.name;

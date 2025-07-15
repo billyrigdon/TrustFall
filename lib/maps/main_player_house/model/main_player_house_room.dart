@@ -1,4 +1,4 @@
-enum MainPlayerHouseRoom { living_room, kitchen, hallway }
+enum MainPlayerHouseRoom { living_room, kitchen, hallway, room_1 }
 
 extension MainPlayerHouseRoomExtension on MainPlayerHouseRoom {
   String get tmxFile {
@@ -9,6 +9,8 @@ extension MainPlayerHouseRoomExtension on MainPlayerHouseRoom {
         return 'kitchen.tmx';
       case MainPlayerHouseRoom.hallway:
         return 'hallway.tmx';
+      case MainPlayerHouseRoom.room_1:
+        return 'room_1.tmx';
     }
   }
 }
