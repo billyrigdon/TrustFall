@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flame/components.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:game/features/characters/battle_character.dart';
-import 'package:game/features/items/items.dart';
+import 'package:game/game/characters/battle_character.dart';
+import 'package:game/game/items/items.dart';
 import 'package:game/services/attacks.dart';
 import 'package:game/services/character_stats.dart';
 

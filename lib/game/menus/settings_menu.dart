@@ -22,11 +22,9 @@ class _SettingsMenuState extends State<SettingsMenu> {
   String controllerScheme = 'WASD';
   String difficulty = 'Normal';
   String resolution = '1280x720';
-  final service = SettingsService(); //
-  final List<FocusNode> _focusNodes = [];
+  final service = SettingsService(); 
   int selectedIndex = 0;
   bool isReady = false;
-  // int focusIndex = 0;
 
   final List<String> controllerOptions = ['WASD', 'Arrows', 'Custom'];
   final List<String> difficultyOptions = ['Easy', 'Normal', 'Hard'];
@@ -53,21 +51,7 @@ class _SettingsMenuState extends State<SettingsMenu> {
   int _totalItems = 0;
 
   final SettingsService settings = SettingsService();
-  // Map<String, String?> keyBindings = {
-  //   'MoveUp': null,
-  //   'MoveDown': null,
-  //   'MoveLeft': null,
-  //   'MoveRight': null,
-  //   'Action': null,
-  //   'Talk': null,
-  //   'Pause': null,
-  //   'Battle': null,
-  // };
 
-  // double volume = 0.5;
-  // double fontSize = 16.0;
-  // String difficulty = 'Normal';
-  // String resolution = '1280x720';
   bool useDpad = false;
 
   @override
@@ -87,29 +71,6 @@ class _SettingsMenuState extends State<SettingsMenu> {
       });
     });
   }
-
-  // void _handleInput(String inputLabel) {
-  //   if (!isReady) return;
-
-  //   final up = service.getBinding('MoveUp');
-  //   final down = service.getBinding('MoveDown');
-  //   final action = service.getBinding('Action');
-
-  //   final isUp = inputLabel == up || inputLabel == 'Arrow Up';
-  //   final isDown = inputLabel == down || inputLabel == 'Arrow Down';
-  //   final isAction =
-  //       inputLabel == action || inputLabel == 'Enter' || inputLabel == 'Space';
-
-  //   if (isDown) {
-  //     setState(() => selectedIndex = (selectedIndex + 1) % _totalItems);
-  //   } else if (isUp) {
-  //     setState(
-  //       () => selectedIndex = (selectedIndex - 1 + _totalItems) % _totalItems,
-  //     );
-  //   } else if (isAction) {
-  //     _triggerSelectedItem();
-  //   }
-  // }
 
   void _handleInput(String inputLabel) {
     if (!isReady) return;
@@ -161,30 +122,6 @@ class _SettingsMenuState extends State<SettingsMenu> {
       final label = '${event.gamepadId}:${event.key}:$dir';
       _handleInput(label);
     }
-  }
-
-  // bool useDpad = false;
-
-  void _loadSettings() async {
-    await service.load();
-
-    final actions = [
-      'MoveUp',
-      'MoveDown',
-      'MoveLeft',
-      'MoveRight',
-      'Action',
-      'Talk',
-      'Pause',
-      'Battle',
-    ];
-
-    setState(() {
-      useDpad = service.getUseDpad();
-      for (var action in actions) {
-        keyBindings[action] = service.getBinding(action);
-      }
-    });
   }
 
   Widget dropdownSetting({
@@ -454,233 +391,4 @@ class _SettingsMenuState extends State<SettingsMenu> {
       ],
     );
   }
-
-  // @override
-  // Widget build(BuildContext context) {
-  //   int focusIndex = 0;
-  //   Widget buildFocusable(Widget child) {
-  //     final node = _focusNodes[focusIndex+];
-  //     return Focus(
-  //       focusNode: node,
-  //       onFocusChange: (_) => setState(() {}),
-  //       child: GestureDetector(
-  //         behavior: HitTestBehavior.opaque,
-  //         onTap: () => node.requestFocus(),
-  //         child: AnimatedContainer(
-  //           duration: const Duration(milliseconds: 100),
-  //           decoration: BoxDecoration(
-  //             border:
-  //                 node.hasFocus
-  //                     ? Border.all(color: Colors.amberAccent, width: 2)
-  //                     : null,
-  //           ),
-  //           child: child,
-  //         ),
-  //       ),
-  //     );
-  //   }
-
-  //   return Material(
-  //     color: Colors.black.withOpacity(0.95),
-  //     child: Center(
-  //       child: Container(
-  //         padding: const EdgeInsets.all(16),
-  //         width: 400,
-  //         decoration: BoxDecoration(
-  //           border: Border.all(color: Colors.white),
-  //           borderRadius: BorderRadius.circular(12),
-  //           color: Colors.black,
-  //         ),
-  //         child: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             const Text(
-  //               'Settings',
-  //               style: TextStyle(color: Colors.amber, fontSize: 24),
-  //             ),
-  //             const SizedBox(height: 20),
-
-  //             buildFocusable(
-  //               KeyBindingRow(
-  //                 label: 'Talk',
-  //                 action: 'Talk',
-  //                 currentBinding: keyBindings['Talk'],
-  //                 onBind: (key) async {
-  //                   await SettingsService().bindAction('Talk', key);
-  //                   setState(() => keyBindings['Talk'] = key);
-  //                 },
-  //               ),
-  //             ),
-  //             buildFocusable(
-  //               KeyBindingRow(
-  //                 label: 'Pause',
-  //                 action: 'Pause',
-  //                 currentBinding: keyBindings['Pause'],
-  //                 onBind: (key) async {
-  //                   await SettingsService().bindAction('Pause', key);
-  //                   setState(() => keyBindings['Pause'] = key);
-  //                 },
-  //               ),
-  //             ),
-  //             buildFocusable(
-  //               KeyBindingRow(
-  //                 label: 'Start Battle',
-  //                 action: 'Battle',
-  //                 currentBinding: keyBindings['Battle'],
-  //                 onBind: (key) async {
-  //                   await SettingsService().bindAction('Battle', key);
-  //                   setState(() => keyBindings['Battle'] = key);
-  //                 },
-  //               ),
-  //             ),
-
-  //             buildFocusable(
-  //               KeyBindingRow(
-  //                 label: 'Move Up',
-  //                 action: 'MoveUp',
-  //                 currentBinding: keyBindings['MoveUp'],
-  //                 onBind: (key) async {
-  //                   await SettingsService().bindAction('MoveUp', key);
-  //                   setState(() => keyBindings['MoveUp'] = key);
-  //                 },
-  //               ),
-  //             ),
-  //             buildFocusable(
-  //               KeyBindingRow(
-  //                 label: 'Move Down',
-  //                 action: 'MoveDown',
-  //                 currentBinding: keyBindings['MoveDown'],
-  //                 onBind: (key) async {
-  //                   await SettingsService().bindAction('MoveDown', key);
-  //                   setState(() => keyBindings['MoveDown'] = key);
-  //                 },
-  //               ),
-  //             ),
-  //             buildFocusable(
-  //               KeyBindingRow(
-  //                 label: 'Move Left',
-  //                 action: 'MoveLeft',
-  //                 currentBinding: keyBindings['MoveLeft'],
-  //                 onBind: (key) async {
-  //                   await SettingsService().bindAction('MoveLeft', key);
-  //                   setState(() => keyBindings['MoveLeft'] = key);
-  //                 },
-  //               ),
-  //             ),
-  //             buildFocusable(
-  //               KeyBindingRow(
-  //                 label: 'Move Right',
-  //                 action: 'MoveRight',
-  //                 currentBinding: keyBindings['MoveRight'],
-  //                 onBind: (key) async {
-  //                   await SettingsService().bindAction('MoveRight', key);
-  //                   setState(() => keyBindings['MoveRight'] = key);
-  //                 },
-  //               ),
-  //             ),
-  //             buildFocusable(
-  //               KeyBindingRow(
-  //                 label: 'Action Button',
-  //                 action: 'Action',
-  //                 currentBinding: keyBindings['Action'],
-  //                 onBind: (key) async {
-  //                   await SettingsService().bindAction('Action', key);
-  //                   setState(() => keyBindings['Action'] = key);
-  //                 },
-  //               ),
-  //             ),
-  //             if (Platform.isAndroid)
-  //               buildFocusable(
-  //                 Row(
-  //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                   children: [
-  //                     const Text(
-  //                       'Use D-pad',
-  //                       style: TextStyle(color: Colors.white),
-  //                     ),
-  //                     Switch(
-  //                       value: useDpad,
-  //                       activeColor: Colors.amber,
-  //                       onChanged: (val) async {
-  //                         setState(() => useDpad = val);
-  //                         await SettingsService().setUseDpad(val);
-  //                       },
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-
-  //             buildFocusable(
-  //               dropdownSetting(
-  //                 label: 'Difficulty',
-  //                 value: difficulty,
-  //                 options: difficultyOptions,
-  //                 onChanged: (val) => setState(() => difficulty = val!),
-  //               ),
-  //             ),
-  //             buildFocusable(
-  //               dropdownSetting(
-  //                 label: 'Resolution',
-  //                 value: resolution,
-  //                 options: resolutionOptions,
-  //                 onChanged: (val) => setState(() => resolution = val!),
-  //               ),
-  //             ),
-  //             const SizedBox(height: 16),
-  //             buildFocusable(
-  //               Row(
-  //                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                 children: [
-  //                   const Text('Volume', style: TextStyle(color: Colors.white)),
-  //                   Expanded(
-  //                     child: Slider(
-  //                       value: volume,
-  //                       onChanged: (val) => setState(() => volume = val),
-  //                       min: 0,
-  //                       max: 1,
-  //                       divisions: 10,
-  //                       label: '${(volume * 100).round()}%',
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //             const SizedBox(height: 8),
-  //             buildFocusable(
-  //               Row(
-  //                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                 children: [
-  //                   const Text(
-  //                     'Font Size',
-  //                     style: TextStyle(color: Colors.white),
-  //                   ),
-  //                   Expanded(
-  //                     child: Slider(
-  //                       value: fontSize,
-  //                       onChanged: (val) => setState(() => fontSize = val),
-  //                       min: 10,
-  //                       max: 32,
-  //                       divisions: 11,
-  //                       label: '${fontSize.round()}',
-  //                     ),
-  //                   ),
-  //                 ],
-  //               ),
-  //             ),
-  //             const SizedBox(height: 20),
-  //             buildFocusable(
-  //               ElevatedButton(
-  //                 onPressed: () {
-  //                   widget.game.overlays.remove('SettingsMenu');
-  //                   widget.game.overlays.add('StartMenu');
-  //                 },
-  //                 child: const Text('Back'),
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 }

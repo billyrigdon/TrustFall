@@ -1,8 +1,8 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Image, Widget;
-import 'package:game/features/characters/battle_character.dart';
-import 'package:game/features/characters/party/PartyMember.dart';
-import 'package:game/features/items/items.dart';
+import 'package:game/game/characters/battle_character.dart';
+import 'package:game/game/characters/party/PartyMember.dart';
+import 'package:game/game/items/items.dart';
 import 'package:game/services/attacks.dart';
 import 'package:game/services/character_stats.dart';
 

@@ -1,11 +1,9 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:game/features/characters/battle_character.dart';
-import 'package:game/features/characters/main_player.dart';
-import 'package:game/features/characters/party/PartyMember.dart';
-import 'package:game/features/items/items.dart';
+import 'package:game/game/characters/battle_character.dart';
+import 'package:game/game/characters/main_player.dart';
+import 'package:game/game/items/items.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:gamepads/gamepads.dart';
 

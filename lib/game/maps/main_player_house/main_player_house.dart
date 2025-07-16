@@ -1,13 +1,13 @@
 import 'dart:io';
-import 'dart:ui';
-import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/experimental.dart';
 import 'package:flame/game.dart';
 import 'package:flame_tiled/flame_tiled.dart';
-import 'package:game/features/characters/main_player.dart';
+import 'package:game/game/characters/main_player.dart';
 import 'package:game/main.dart';
-import 'package:game/maps/main_player_house/model/main_player_house_room.dart';
+import 'package:game/game/maps/main_player_house/model/main_player_house_room.dart';
+import 'package:game/widgets/door.dart';
+import 'package:game/widgets/wall.dart';
 
 class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
   final MainPlayerHouseRoom initialRoom;
@@ -225,33 +225,5 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
         gameRef.world.add(Wall(pos, size));
       }
     }
-  }
-}
-
-class Door extends PositionComponent with CollisionCallbacks {
-  final VoidCallback onEnter;
-
-  Door({
-    required MainPlayerHouseRoom destRoom,
-    required this.onEnter,
-    required Vector2 position,
-    required String orientation,
-    required Vector2 size,
-  }) {
-    this.position = position;
-    this.size = size;
-    anchor = Anchor.topLeft;
-    add(RectangleHitbox()..collisionType = CollisionType.passive);
-  }
-
-  @override
-  void onCollisionStart(
-    Set<Vector2> intersectionPoints,
-    PositionComponent other,
-  ) {
-    if (other is MainPlayer) {
-      onEnter();
-    }
-    super.onCollisionStart(intersectionPoints, other);
   }
 }

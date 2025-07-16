@@ -1,9 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:game/features/characters/battle_character.dart';
-import 'package:game/features/characters/enemies/test_enemy.dart';
-import 'package:game/features/characters/main_player.dart';
-import 'package:game/features/items/items.dart';
+import 'package:game/game/characters/battle_character.dart';
+import 'package:game/game/characters/enemies/test_enemy.dart';
+import 'package:game/game/items/items.dart';
 import 'package:game/services/attacks.dart';
 
 class BattleManager extends ChangeNotifier {
@@ -24,7 +23,6 @@ class BattleManager extends ChangeNotifier {
   }
 
   void reset() {
-    // Don't reset HP to full — we now persist it
     playerTurn = true;
     battleEnded = false;
     notifyListeners();
@@ -62,11 +60,9 @@ class BattleManager extends ChangeNotifier {
         target.heal(item.value ?? 0); // or read from a field like `item.power`
         break;
       default:
-        // You can extend this logic to support buffs/equipment/etc.
         break;
     }
 
-    // Remove from whoever used it
     final user = party.firstWhere((c) => c.inventory.contains(item));
     user.removeItem(item);
 

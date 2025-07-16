@@ -130,7 +130,6 @@ class CharacterStats {
           'reputation': 1,
         };
       case CharacterClass.balanced:
-      default:
         return {
           'confidence': 2,
           'strength': 2,

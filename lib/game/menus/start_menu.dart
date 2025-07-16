@@ -1,21 +1,21 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game/main.dart';
 import 'package:game/services/settings_service.dart';
-import 'package:game/widgets/touch_overlay.dart';
 import 'package:gamepads/gamepads.dart';
 
 class StartMenu extends StatefulWidget {
   final TrustFall game;
-  const StartMenu({super.key, required this.game});
+  // final startMenuKey = GlobalKey<_StartMenuState>();
+
+  StartMenu({super.key, required this.game});
 
   @override
-  State<StartMenu> createState() => _StartMenuState();
+  State<StartMenu> createState() => StartMenuState();
 }
 
-class _StartMenuState extends State<StartMenu> {
+class StartMenuState extends State<StartMenu> {
   int selectedIndex = 0;
   final List<String> options = ['New Game', 'Load Game', 'Settings', 'Exit'];
   final SettingsService settings = SettingsService();
@@ -52,14 +52,13 @@ class _StartMenuState extends State<StartMenu> {
             ? event.logicalKey.debugName ?? ''
             : event.logicalKey.keyLabel;
 
-    _handleInput(keyLabel);
+    handleInput(keyLabel);
   }
 
   void _onGamepad(GamepadEvent event) {
     final typeString = event.type.toString();
 
     final isAxis = typeString.contains('axis') || typeString.contains('analog');
-    final isButton = event.type == KeyType.button;
 
     if (isAxis && event.value.abs() > 0.9) {
       final direction = event.value > 0 ? '+' : '-';
@@ -75,24 +74,24 @@ class _StartMenuState extends State<StartMenu> {
       );
 
       if (input == up)
-        _handleInput(up);
+        handleInput(up);
       else if (input == down)
-        _handleInput(down);
+        handleInput(down);
       else if (input == left)
-        _handleInput(left);
+        handleInput(left);
       else if (input == right)
-        _handleInput(right);
+        handleInput(right);
     }
 
     if (event.type == KeyType.button && event.value == 1.0) {
       final input = '${event.gamepadId}:${event.key}';
       final action = settings.getBinding('Action');
       print('[Button] input=$input | action=$action');
-      if (input == action) _handleInput(action);
+      if (input == action) handleInput(action);
     }
   }
 
-  void _handleInput(String inputLabel) {
+  void handleInput(String inputLabel) {
     if (!isReady) return;
 
     final up = settings.getBinding('MoveUp');
@@ -134,6 +133,7 @@ class _StartMenuState extends State<StartMenu> {
     switch (selection) {
       case 'New Game':
         widget.game.overlays.remove('StartMenu');
+        widget.game.playerIsInMenu = false;
         widget.game.resumeEngine();
         break;
       case 'Load Game':
@@ -144,6 +144,7 @@ class _StartMenuState extends State<StartMenu> {
         break;
       case 'Exit':
         Future.delayed(const Duration(milliseconds: 200), () {
+          // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
           WidgetsBinding.instance.handlePopRoute();
         });
         break;
@@ -186,19 +187,16 @@ class _StartMenuState extends State<StartMenu> {
           ),
         ),
         // 👇 Touch controls here
-        if (Platform.isAndroid || Platform.isIOS)
-          Positioned.fill(
-            child: IgnorePointer(
-              ignoring: !Platform.isAndroid && !Platform.isIOS,
-              child: TouchControls(
-                onInput: (label, isPressed) {
-                  if (isPressed) {
-                    _handleInput(label);
-                  }
-                },
-              ),
-            ),
-          ),
+        // if (Platform.isAndroid || Platform.isIOS)
+        //   Positioned.fill(
+        //     child: TouchControls(
+        //       onInput: (label, isPressed) {
+        //         if (isPressed) {
+        //           _handleInput(label);
+        //         }
+        //       },
+        //     ),
+        //   ),
       ],
     );
   }

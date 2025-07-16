@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:game/features/characters/party/PartyMember.dart';
-import 'package:game/features/items/items.dart';
+import 'package:game/game/characters/party/PartyMember.dart';
+import 'package:game/game/items/items.dart';
 import 'package:game/services/attacks.dart';
 import 'package:game/services/character_stats.dart';
 import 'package:shared_preferences/shared_preferences.dart';
