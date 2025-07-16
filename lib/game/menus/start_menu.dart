@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game/main.dart';
@@ -139,8 +140,15 @@ class StartMenuState extends State<StartMenu> {
       case 'Load Game':
         break;
       case 'Settings':
-        widget.game.overlays.add('SettingsMenu');
         widget.game.overlays.remove('StartMenu');
+        widget.game.overlays.remove('TouchControls');
+        widget.game.playerIsInSettingsMenu = true;
+        widget.game.overlays.add('SettingsMenu');
+        widget.game.ensureTouchControls();
+        widget.game.playerIsInMenu = false;
+
+        // if (Platform.isAndroid) widget.game.overlays.add('TouchControls');
+        // widget.game.resumeEngine();
         break;
       case 'Exit':
         Future.delayed(const Duration(milliseconds: 200), () {

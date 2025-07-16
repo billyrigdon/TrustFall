@@ -25,10 +25,10 @@ class BattleOverlay extends StatefulWidget {
   });
 
   @override
-  State<BattleOverlay> createState() => _BattleOverlayState();
+  State<BattleOverlay> createState() => BattleOverlayState();
 }
 
-class _BattleOverlayState extends State<BattleOverlay> {
+class BattleOverlayState extends State<BattleOverlay> {
   late final BattleManager battleManager;
   int selectedIndex = 0;
   bool itemMenuOpen = false;
@@ -75,7 +75,7 @@ class _BattleOverlayState extends State<BattleOverlay> {
             ? event.logicalKey.keyLabel
             : event.logicalKey.debugName ?? '';
 
-    _handleInput(label);
+    handleInput(label);
   }
 
   void _onGamepad(GamepadEvent event) {
@@ -88,16 +88,18 @@ class _BattleOverlayState extends State<BattleOverlay> {
     if (isAxis && event.value.abs() > 0.9) {
       final dir = event.value > 0 ? '+' : '-';
       final input = '${event.gamepadId}:${event.key}:$dir';
-      _handleInput(input);
+      handleInput(input);
     }
 
     if (isButton && event.value == 1.0) {
       final input = '${event.gamepadId}:${event.key}';
-      _handleInput(input);
+      handleInput(input);
     }
   }
 
-  void _handleInput(String inputLabel) {
+  void handleInput(String inputLabel) {
+    print('handling input');
+    print(inputLabel);
     final up = settings.getBinding('MoveUp');
     final down = settings.getBinding('MoveDown');
     final left = settings.getBinding('MoveLeft');

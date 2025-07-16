@@ -13,10 +13,10 @@ class PauseMenu extends StatefulWidget {
   const PauseMenu({super.key, required this.player});
 
   @override
-  State<PauseMenu> createState() => _PauseMenuState();
+  State<PauseMenu> createState() => PauseMenuState();
 }
 
-class _PauseMenuState extends State<PauseMenu> {
+class PauseMenuState extends State<PauseMenu> {
   int selectedTab = 0;
 
   final List<String> tabs = ['Inventory', 'Equipment', 'Party'];
@@ -47,7 +47,7 @@ class _PauseMenuState extends State<PauseMenu> {
             ? event.logicalKey.debugName ?? ''
             : event.logicalKey.keyLabel;
 
-    _handleInput(label);
+    handleInput(label);
   }
 
   void _onGamepad(GamepadEvent event) {
@@ -98,7 +98,7 @@ class _PauseMenuState extends State<PauseMenu> {
     }
   }
 
-  void _handleInput(String input) {
+  void handleInput(String input) {
     final left = settings.getBinding('MoveLeft');
     final right = settings.getBinding('MoveRight');
 

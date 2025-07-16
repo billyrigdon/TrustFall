@@ -13,18 +13,19 @@ class SettingsMenu extends StatefulWidget {
   const SettingsMenu({super.key, required this.game});
 
   @override
-  State<SettingsMenu> createState() => _SettingsMenuState();
+  State<SettingsMenu> createState() => SettingsMenuState();
 }
 
-class _SettingsMenuState extends State<SettingsMenu> {
+class SettingsMenuState extends State<SettingsMenu> {
   double volume = 0.5;
   double fontSize = 16.0;
   String controllerScheme = 'WASD';
   String difficulty = 'Normal';
   String resolution = '1280x720';
-  final service = SettingsService(); 
+  final service = SettingsService();
   int selectedIndex = 0;
   bool isReady = false;
+  final ScrollController _scrollController = ScrollController();
 
   final List<String> controllerOptions = ['WASD', 'Arrows', 'Custom'];
   final List<String> difficultyOptions = ['Easy', 'Normal', 'Hard'];
@@ -60,7 +61,8 @@ class _SettingsMenuState extends State<SettingsMenu> {
 
     RawKeyboard.instance.addListener(_onKey);
     Gamepads.events.listen(_onGamepad);
-
+    // if (Platform.isAndroid) widget.game.overlays.add('TouchControls');
+    // print('touch controls');
     settings.load().then((_) {
       setState(() {
         for (var action in keyBindings.keys) {
@@ -72,7 +74,13 @@ class _SettingsMenuState extends State<SettingsMenu> {
     });
   }
 
-  void _handleInput(String inputLabel) {
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void handleInput(String inputLabel) {
     if (!isReady) return;
 
     final up = service.getBinding('MoveUp');
@@ -85,19 +93,31 @@ class _SettingsMenuState extends State<SettingsMenu> {
         inputLabel == action ||
         inputLabel == 'Enter' ||
         inputLabel == LogicalKeyboardKey.enter.keyLabel ||
-        inputLabel == 'A'; // ← from TouchControls
+        inputLabel == 'A';
 
     if (isDown) {
       if (mounted)
         setState(() => selectedIndex = (selectedIndex + 1) % _totalItems);
+      _scrollToSelectedItem();
     } else if (isUp) {
       if (mounted)
         setState(
           () => selectedIndex = (selectedIndex - 1 + _totalItems) % _totalItems,
         );
+      _scrollToSelectedItem();
     } else if (isAction) {
       if (mounted) _triggerSelectedItem();
     }
+  }
+
+  void _scrollToSelectedItem() {
+    // Adjust item height if needed
+    const itemHeight = 60.0; // approximate item height + margin
+    _scrollController.animateTo(
+      selectedIndex * itemHeight,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void _onKey(RawKeyEvent event) {
@@ -107,20 +127,20 @@ class _SettingsMenuState extends State<SettingsMenu> {
               ? event.logicalKey.debugName ?? ''
               : event.logicalKey.keyLabel;
       print(keyLabel);
-      _handleInput(keyLabel);
+      handleInput(keyLabel);
     }
   }
 
   void _onGamepad(GamepadEvent event) {
     if (event.value == 1.0 && event.type == KeyType.button) {
       final label = '${event.gamepadId}:${event.key}';
-      _handleInput(label);
+      handleInput(label);
     } else if ((event.type.toString().contains('axis') ||
             event.type == KeyType.analog) &&
         event.value.abs() > 0.9) {
       final dir = event.value > 0 ? '+' : '-';
       final label = '${event.gamepadId}:${event.key}:$dir';
-      _handleInput(label);
+      handleInput(label);
     }
   }
 
@@ -247,7 +267,14 @@ class _SettingsMenuState extends State<SettingsMenu> {
     return ElevatedButton(
       onPressed: () {
         widget.game.overlays.remove('SettingsMenu');
+        if (Platform.isAndroid || Platform.isIOS)
+          widget.game.overlays.remove('TouchControls');
         widget.game.overlays.add('StartMenu');
+        // if (Platform.isAndroid) widget.game.overlays.add('TouchControls');
+        widget.game.playerIsInMenu = true;
+        widget.game.playerIsInSettingsMenu = false;
+        if (Platform.isAndroid || Platform.isIOS)
+          widget.game.ensureTouchControls();
       },
       child: const Text('Back'),
     );
@@ -277,11 +304,16 @@ class _SettingsMenuState extends State<SettingsMenu> {
         if (!Platform.isAndroid) {
           widget.game.overlays.remove('SettingsMenu');
           widget.game.overlays.add('StartMenu');
+          widget.game.resumeEngine();
         }
         break;
       case 13:
         widget.game.overlays.remove('SettingsMenu');
+        widget.game.overlays.remove('TouchControls');
         widget.game.overlays.add('StartMenu');
+        widget.game.playerIsInSettingsMenu = false;
+        widget.game.playerIsInMenu = true;
+        widget.game.ensureTouchControls();
         break;
     }
   }
@@ -350,6 +382,7 @@ class _SettingsMenuState extends State<SettingsMenu> {
                   const SizedBox(height: 16),
                   Expanded(
                     child: ListView.builder(
+                      controller: _scrollController,
                       itemCount: settingsItems.length,
                       itemBuilder: (context, index) {
                         final isSelected = index == selectedIndex;
@@ -376,18 +409,6 @@ class _SettingsMenuState extends State<SettingsMenu> {
             ),
           ),
         ),
-
-        if (Platform.isAndroid || Platform.isIOS)
-          Positioned.fill(
-            child: IgnorePointer(
-              ignoring: false,
-              child: TouchControls(
-                onInput: (label, isPressed) {
-                  if (isPressed) _handleInput(label);
-                },
-              ),
-            ),
-          ),
       ],
     );
   }

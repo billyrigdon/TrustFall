@@ -67,37 +67,41 @@ class TouchControls extends StatelessWidget {
           left: 80,
           bottom: 30,
           child: SizedBox(
-            width: 120,
-            height: 120,
+            width: 150,
+            height: 150,
             child:
                 useDpad
                     ? DpadControls(onInput: onInput)
-                    : Joystick(
-                      mode: JoystickMode.all,
-                      listener: (details) {
-                        const threshold = 0.25;
-                        onInput('Arrow Up', details.y < -threshold);
-                        onInput('Arrow Down', details.y > threshold);
-                        onInput('Arrow Left', details.x < -threshold);
-                        onInput('Arrow Right', details.x > threshold);
-                      },
-                      base: Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.grey.withOpacity(0.7),
-                            width: 2,
+                    : Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Joystick(
+                        includeInitialAnimation: false,
+                        mode: JoystickMode.all,
+                        listener: (details) {
+                          const threshold = 0.25;
+                          onInput('Arrow Up', details.y < -threshold);
+                          onInput('Arrow Down', details.y > threshold);
+                          onInput('Arrow Left', details.x < -threshold);
+                          onInput('Arrow Right', details.x > threshold);
+                        },
+                        base: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.grey.withOpacity(0.7),
+                              width: 2,
+                            ),
                           ),
                         ),
-                      ),
-                      stick: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey.withOpacity(0.9),
+                        stick: Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.grey.withOpacity(0.9),
+                          ),
                         ),
                       ),
                     ),
@@ -109,7 +113,7 @@ class TouchControls extends StatelessWidget {
 
         // A and B buttons (Bottom Right)
         Positioned(right: 40, bottom: 80, child: _styledButton('Enter', 'A')),
-        Positioned(right: 100, bottom: 40, child: _styledButton('b', 'B')),
+        Positioned(right: 100, bottom: 40, child: _styledButton('Key B', 'B')),
       ],
     );
   }

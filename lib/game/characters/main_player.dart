@@ -517,6 +517,9 @@ class MainPlayer extends SpriteAnimationComponent
     }
   }
 
+
+
+
   @override
   List<PartyMember> currentParty = [];
 
