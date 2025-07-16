@@ -5,7 +5,7 @@ import 'package:flame/game.dart';
 import 'package:flame_tiled/flame_tiled.dart';
 import 'package:game/game/characters/main_player.dart';
 import 'package:game/main.dart';
-import 'package:game/game/maps/main_player_house/model/main_player_house_room.dart';
+import 'package:game/game/scenes/main_player_house/main_player_house_room.dart';
 import 'package:game/widgets/door.dart';
 import 'package:game/widgets/wall.dart';
 
@@ -206,9 +206,6 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     gameRef.player = newPlayer;
     world.add(newPlayer);
   }
-
-  
-
 
   void _addCollisions(TiledComponent map) {
     final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
