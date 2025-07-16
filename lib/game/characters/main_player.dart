@@ -2,9 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:flutter/services.dart';
 import 'package:game/models/battle_character.dart';
-import 'package:game/game/characters/enemies/test_enemy.dart';
 import 'package:game/models/equipment.dart';
 import 'package:game/models/party_member.dart';
 import 'package:game/models/items.dart';
@@ -45,12 +43,12 @@ class MainPlayer extends SpriteAnimationComponent
   late SpriteAnimation walkDown;
   late SpriteAnimation walkLeft;
   late SpriteAnimation walkRight;
-  late SpriteAnimation walkUpRight;
-  late SpriteAnimation walkUpLeft;
-  late SpriteAnimation walkDownLeft;
-  late SpriteAnimation walkDownRight;
+  // late SpriteAnimation walkUpRight;
+  // late SpriteAnimation walkUpLeft;
+  // late SpriteAnimation walkDownLeft;
+  // late SpriteAnimation walkDownRight;
 
-  late SpriteAnimation diagAnimation;
+  // late SpriteAnimation diagAnimation;
 
   final settings = SettingsService();
   StreamSubscription<GamepadEvent>? _gamepadSub;
@@ -119,25 +117,25 @@ class MainPlayer extends SpriteAnimationComponent
       await gameRef.loadSprite('main_bottom_2.png'),
     ], stepTime: 0.2);
 
-    walkUpRight = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_top_right_1.png'),
-      // await gameRef.loadSprite('main_up_right_2.png'),
-    ], stepTime: 0.2);
+    // walkUpRight = SpriteAnimation.spriteList([
+    //   await gameRef.loadSprite('main_top_right_1.png'),
+    //   // await gameRef.loadSprite('main_up_right_2.png'),
+    // ], stepTime: 0.2);
 
-    walkUpLeft = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_top_left_1.png'),
-      // await gameRef.loadSprite('main_up_left_2.png'),
-    ], stepTime: 0.2);
+    // walkUpLeft = SpriteAnimation.spriteList([
+    //   await gameRef.loadSprite('main_top_left_1.png'),
+    //   // await gameRef.loadSprite('main_up_left_2.png'),
+    // ], stepTime: 0.2);
 
-    walkDownRight = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_bottom_right_1.png'),
-      // await gameRef.loadSprite('main_down_right_2.png'),
-    ], stepTime: 0.2);
+    // walkDownRight = SpriteAnimation.spriteList([
+    //   await gameRef.loadSprite('main_bottom_right_1.png'),
+    //   // await gameRef.loadSprite('main_down_right_2.png'),
+    // ], stepTime: 0.2);
 
-    walkDownLeft = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_bottom_left_1.png'),
-      // await gameRef.loadSprite('main_down_left_2.png'),
-    ], stepTime: 0.2);
+    // walkDownLeft = SpriteAnimation.spriteList([
+    //   await gameRef.loadSprite('main_bottom_left_1.png'),
+    //   // await gameRef.loadSprite('main_down_left_2.png'),
+    // ], stepTime: 0.2);
 
     idleAnimation = idleDown;
 
@@ -207,19 +205,20 @@ class MainPlayer extends SpriteAnimationComponent
     if (pressingLeft) moveDirection.x -= 1;
     if (pressingRight) moveDirection.x += 1;
 
-    if (moveDirection.x > 0 && moveDirection.y < 0) {
-      lastDirection = 'upRight';
-      animation = walkUpRight;
-    } else if (moveDirection.x < 0 && moveDirection.y < 0) {
-      lastDirection = 'upLeft';
-      animation = walkUpLeft;
-    } else if (moveDirection.x > 0 && moveDirection.y > 0) {
-      lastDirection = 'downRight';
-      animation = walkDownRight;
-    } else if (moveDirection.x < 0 && moveDirection.y > 0) {
-      lastDirection = 'downLeft';
-      animation = walkDownLeft;
-    } else if (moveDirection.x > 0) {
+    // if (moveDirection.x > 0 && moveDirection.y < 0) {
+    //   lastDirection = 'upRight';
+    //   animation = walkUpRight;
+    // } else if (moveDirection.x < 0 && moveDirection.y < 0) {
+    //   lastDirection = 'upLeft';
+    //   animation = walkUpLeft;
+    // } else if (moveDirection.x > 0 && moveDirection.y > 0) {
+    //   lastDirection = 'downRight';
+    //   animation = walkDownRight;
+    // } else if (moveDirection.x < 0 && moveDirection.y > 0) {
+    //   lastDirection = 'downLeft';
+    //   animation = walkDownLeft;
+    // } else
+    if (moveDirection.x > 0) {
       lastDirection = 'right';
       animation = walkRight;
     } else if (moveDirection.x < 0) {
@@ -304,7 +303,6 @@ class MainPlayer extends SpriteAnimationComponent
     final levelDiff = enemyLevel - stats.level;
     final modifier = 1.0 + (levelDiff * 0.1);
     stats.gainXP(baseXp * modifier.clamp(0.5, 2.0), id: name);
-    // You could persist level/xp here too later
   }
 
   @override

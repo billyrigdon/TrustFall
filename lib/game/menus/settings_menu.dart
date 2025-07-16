@@ -5,8 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:game/main.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:game/widgets/keybinding_row.dart';
-import 'package:game/widgets/touch_overlay.dart';
-import 'package:gamepads/gamepads.dart';
 
 class SettingsMenu extends StatefulWidget {
   final TrustFall game;
@@ -47,8 +45,6 @@ class SettingsMenuState extends State<SettingsMenu> {
     'Battle': null,
   };
 
-  // bool isReady = false;
-  // int selectedIndex = 0;
   int _totalItems = 0;
 
   final SettingsService settings = SettingsService();
@@ -59,10 +55,6 @@ class SettingsMenuState extends State<SettingsMenu> {
   void initState() {
     super.initState();
 
-    // RawKeyboard.instance.addListener(_onKey);
-    // Gamepads.events.listen(_onGamepad);
-    // if (Platform.isAndroid) widget.game.overlays.add('TouchControls');
-    // print('touch controls');
     settings.load().then((_) {
       setState(() {
         for (var action in keyBindings.keys) {
@@ -99,14 +91,16 @@ class SettingsMenuState extends State<SettingsMenu> {
     final isBack = inputLabel == back || inputLabel == 'Backspace';
 
     if (isDown) {
-      if (mounted)
+      if (mounted) {
         setState(() => selectedIndex = (selectedIndex + 1) % _totalItems);
+      }
       _scrollToSelectedItem();
     } else if (isUp) {
-      if (mounted)
+      if (mounted) {
         setState(
           () => selectedIndex = (selectedIndex - 1 + _totalItems) % _totalItems,
         );
+      }
       _scrollToSelectedItem();
     } else if (isAction) {
       var isListening = false;

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:game/game/battle/battle_manager.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/game/characters/enemies/test_enemy.dart' as game_enemy;
@@ -91,7 +90,6 @@ class BattleOverlayState extends State<BattleOverlay> {
         return;
       }
     }
-
 
     if (isRight && !itemMenuOpen && !attackMenuOpen) {
       setState(() => selectedIndex = (selectedIndex + 1) % commands.length);

@@ -1,16 +1,13 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game/main.dart';
 import 'package:game/services/settings_service.dart';
-import 'package:gamepads/gamepads.dart';
 
 class StartMenu extends StatefulWidget {
   final TrustFall game;
-  // final startMenuKey = GlobalKey<_StartMenuState>();
 
-  StartMenu({super.key, required this.game});
+  const StartMenu({super.key, required this.game});
 
   @override
   State<StartMenu> createState() => StartMenuState();
@@ -21,15 +18,11 @@ class StartMenuState extends State<StartMenu> {
   final List<String> options = ['New Game', 'Load Game', 'Settings', 'Exit'];
   final SettingsService settings = SettingsService();
 
-  // StreamSubscription<GamepadEvent>? _gamepadSub;
-
   bool isReady = false;
 
   @override
   void initState() {
     super.initState();
-    // RawKeyboard.instance.addListener(_onKey);
-    // _gamepadSub = Gamepads.events.listen(_onGamepad);
 
     SettingsService().load().then((_) {
       setState(() {
@@ -40,60 +33,10 @@ class StartMenuState extends State<StartMenu> {
 
   @override
   void dispose() {
-    // RawKeyboard.instance.removeListener(_onKey);
-    // _gamepadSub?.cancel();
     super.dispose();
   }
 
-  // void _onKey(RawKeyEvent event) {
-  //   if (event is! RawKeyDownEvent) return;
-
-  //   final keyLabel =
-  //       event.logicalKey.keyLabel.isEmpty
-  //           ? event.logicalKey.debugName ?? ''
-  //           : event.logicalKey.keyLabel;
-
-  //   handleInput(keyLabel);
-  // }
-
-  // void _onGamepad(GamepadEvent event) {
-  //   final typeString = event.type.toString();
-
-  //   final isAxis = typeString.contains('axis') || typeString.contains('analog');
-
-  //   if (isAxis && event.value.abs() > 0.9) {
-  //     final direction = event.value > 0 ? '+' : '-';
-  //     final input = '${event.gamepadId}:${event.key}:$direction';
-
-  //     final up = settings.getBinding('MoveUp');
-  //     final down = settings.getBinding('MoveDown');
-  //     final left = settings.getBinding('MoveLeft');
-  //     final right = settings.getBinding('MoveRight');
-
-  //     print(
-  //       '[Axis] input=$input | up=$up, down=$down, left=$left, right=$right',
-  //     );
-
-  //     if (input == up)
-  //       handleInput(up);
-  //     else if (input == down)
-  //       handleInput(down);
-  //     else if (input == left)
-  //       handleInput(left);
-  //     else if (input == right)
-  //       handleInput(right);
-  //   }
-
-  //   if (event.type == KeyType.button && event.value == 1.0) {
-  //     final input = '${event.gamepadId}:${event.key}';
-  //     final action = settings.getBinding('Action');
-  //     print('[Button] input=$input | action=$action');
-  //     if (input == action) handleInput(action);
-  //   }
-  // }
-
   void handleInput(String inputLabel) {
-    print('----------------------------');
     if (!isReady) return;
 
     final up = settings.getBinding('MoveUp');
@@ -148,8 +91,6 @@ class StartMenuState extends State<StartMenu> {
         widget.game.overlays.add('SettingsMenu');
         widget.game.keyboardListenerKey.currentState?.regainFocus();
         widget.game.ensureTouchControls();
-        // if (Platform.isAndroid) widget.game.overlays.add('TouchControls');
-        // widget.game.resumeEngine();
         break;
       case 'Exit':
         Future.delayed(const Duration(milliseconds: 200), () {
@@ -195,17 +136,6 @@ class StartMenuState extends State<StartMenu> {
             ),
           ),
         ),
-        // 👇 Touch controls here
-        // if (Platform.isAndroid || Platform.isIOS)
-        //   Positioned.fill(
-        //     child: TouchControls(
-        //       onInput: (label, isPressed) {
-        //         if (isPressed) {
-        //           _handleInput(label);
-        //         }
-        //       },
-        //     ),
-        //   ),
       ],
     );
   }

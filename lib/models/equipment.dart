@@ -15,17 +15,14 @@ class Equipment extends Item {
   final int intelligence;
 
   Equipment({
-    required String name,
+    required super.name,
     required this.slot,
-    double damage = 0,
+    super.damage = 0,
     this.defense = 0,
     this.intelligence = 0,
-    int? price,
+    super.price,
   }) : super(
-         name: name,
          type: ItemType.equipment,
-         damage: damage,
-         price: price,
        );
 
   @override

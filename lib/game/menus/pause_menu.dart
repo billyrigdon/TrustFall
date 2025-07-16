@@ -5,7 +5,6 @@ import 'package:game/models/battle_character.dart';
 import 'package:game/game/characters/main_player.dart';
 import 'package:game/models/items.dart';
 import 'package:game/services/settings_service.dart';
-import 'package:gamepads/gamepads.dart';
 
 class PauseMenu extends StatefulWidget {
   final MainPlayer player;
@@ -41,8 +40,6 @@ class PauseMenuState extends State<PauseMenu> {
 
   @override
   void dispose() {
-    // RawKeyboard.instance.removeListener(_onKey);
-    // _gamepadSub?.cancel();
     super.dispose();
   }
 
@@ -139,77 +136,6 @@ class PauseMenuState extends State<PauseMenu> {
     }
   }
 
-  Future<BattleCharacter?> _selectPartyMember(List<BattleCharacter> party) {
-    int selectedIndex = 0;
-    final controller = ScrollController();
-
-    return showDialog<BattleCharacter>(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) {
-        void updateSelection(int direction) {
-          selectedIndex =
-              (selectedIndex + direction + party.length) % party.length;
-          controller.animateTo(
-            selectedIndex * 56.0,
-            duration: const Duration(milliseconds: 150),
-            curve: Curves.easeInOut,
-          );
-          (context as Element).markNeedsBuild();
-        }
-
-        void onInput(RawKeyEvent input) {
-          final up = settings.getBinding('MoveUp');
-          final down = settings.getBinding('MoveDown');
-          final action = settings.getBinding('Action');
-
-          if (input == up || input == 'Arrow Up') {
-            updateSelection(-1);
-          } else if (input == down || input == 'Arrow Down') {
-            updateSelection(1);
-          } else if (input == action || input == 'Enter' || input == 'Space') {
-            Navigator.of(context).pop(party[selectedIndex]);
-          }
-        }
-
-        RawKeyboard.instance.addListener(onInput);
-
-        return AlertDialog(
-          backgroundColor: Colors.black,
-          title: const Text(
-            'Use on who?',
-            style: TextStyle(color: Colors.white),
-          ),
-          content: SizedBox(
-            height: 250,
-            child: ListView.builder(
-              controller: controller,
-              itemCount: party.length,
-              itemBuilder: (context, i) {
-                final member = party[i];
-                return Container(
-                  color:
-                      i == selectedIndex ? Colors.amber.withOpacity(0.2) : null,
-                  child: ListTile(
-                    title: Text(
-                      member.name,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    subtitle: Text(
-                      'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
-                      style: const TextStyle(color: Colors.white54),
-                    ),
-                    onTap: () => Navigator.pop(context, member),
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _useItem(Item item) {
     final party = [
       widget.player as BattleCharacter,
@@ -217,7 +143,7 @@ class PauseMenuState extends State<PauseMenu> {
     ];
     setState(() {
       selectingPartyMember = true;
-      _dialogParty = party as List<BattleCharacter>;
+      _dialogParty = party;
       selectedPartyIndex = 0;
       _partySelectionCompleter = Completer<BattleCharacter?>();
     });
