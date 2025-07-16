@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:game/game/characters/battle_character.dart';
+import 'package:game/models/battle_character.dart';
 import 'package:game/game/characters/enemies/test_enemy.dart';
-import 'package:game/game/items/items.dart';
-import 'package:game/services/attacks.dart';
+import 'package:game/models/items.dart';
+import 'package:game/models/attacks.dart';
 
 class BattleManager extends ChangeNotifier {
   final List<BattleCharacter> party;

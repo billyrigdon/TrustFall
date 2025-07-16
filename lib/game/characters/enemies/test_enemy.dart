@@ -1,10 +1,10 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show Image, Widget;
-import 'package:game/game/characters/battle_character.dart';
-import 'package:game/game/characters/party/PartyMember.dart';
-import 'package:game/game/items/items.dart';
-import 'package:game/services/attacks.dart';
-import 'package:game/services/character_stats.dart';
+import 'package:game/models/battle_character.dart';
+import 'package:game/models/party_member.dart';
+import 'package:game/models/items.dart';
+import 'package:game/models/attacks.dart';
+import 'package:game/models/character_stats.dart';
 
 class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
   @override

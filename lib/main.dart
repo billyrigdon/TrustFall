@@ -4,7 +4,7 @@ import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:game/game/battle/battle_overlay.dart';
-import 'package:game/game/characters/battle_character.dart';
+import 'package:game/models/battle_character.dart';
 import 'package:game/game/characters/enemies/test_enemy.dart';
 import 'package:game/game/characters/main_player.dart';
 import 'package:game/game/menus/pause_menu.dart';

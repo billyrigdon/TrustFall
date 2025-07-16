@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:flame/components.dart';
+import 'package:game/models/equipment.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:game/game/characters/battle_character.dart';
-import 'package:game/game/items/items.dart';
-import 'package:game/services/attacks.dart';
-import 'package:game/services/character_stats.dart';
+import 'package:game/models/battle_character.dart';
+import 'package:game/models/items.dart';
+import 'package:game/models/attacks.dart';
+import 'package:game/models/character_stats.dart';
 
 class PartyMember extends SpriteComponent implements BattleCharacter {
   @override
