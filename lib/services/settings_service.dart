@@ -32,7 +32,7 @@ class SettingsService {
     'Action',
     'Pause',
     'Battle',
-    'Talk',
+    'Back',
   ];
 
   Future<void> load() async {
@@ -88,7 +88,7 @@ Future<void> setUseDpad(bool value) async {
           'Action': 'Enter',
           'Pause': 'Key P',
           'Battle': 'Key B',
-          'Talk': 'Space',
+          'Back': 'Backspace',
         }[action]!;
   }
 
@@ -120,7 +120,7 @@ Future<void> setUseDpad(bool value) async {
               'Action': 'Enter',
               'Pause': 'Key P',
               'Battle': 'Key B',
-              'Talk': 'Space',
+              'Back': 'Backspace',
             }[action]!,
     };
   }

@@ -22,145 +22,282 @@ class PauseMenuState extends State<PauseMenu> {
   final List<String> tabs = ['Inventory', 'Equipment', 'Party'];
 
   final SettingsService settings = SettingsService();
-  StreamSubscription<GamepadEvent>? _gamepadSub;
-  Set<String> _activeInputs = {};
+  // StreamSubscription<GamepadEvent>? _gamepadSub;
+  // Set<String> _activeInputs = {};
+  int selectedInventoryIndex = 0;
+  int selectedPartyIndex = 0;
+  bool selectingPartyMember = false;
+  late ScrollController _inventoryScrollController;
+  late ScrollController _partyDialogScrollController;
+  Completer<BattleCharacter?>? _partySelectionCompleter;
+  List<BattleCharacter> _dialogParty = [];
 
   @override
   void initState() {
     super.initState();
-    RawKeyboard.instance.addListener(_onKey);
-    _gamepadSub = Gamepads.events.listen(_onGamepad);
+    _inventoryScrollController = ScrollController();
+    _partyDialogScrollController = ScrollController();
   }
 
   @override
   void dispose() {
-    RawKeyboard.instance.removeListener(_onKey);
-    _gamepadSub?.cancel();
+    // RawKeyboard.instance.removeListener(_onKey);
+    // _gamepadSub?.cancel();
     super.dispose();
   }
 
-  void _onKey(RawKeyEvent event) {
-    if (event is! RawKeyDownEvent) return;
-
-    final label =
-        event.logicalKey.keyLabel.isEmpty
-            ? event.logicalKey.debugName ?? ''
-            : event.logicalKey.keyLabel;
-
-    handleInput(label);
-  }
-
-  void _onGamepad(GamepadEvent event) {
-    final typeStr = event.type.toString();
-    final isAxis = typeStr.contains('axis') || typeStr.contains('analog');
-    final isButton = event.type == KeyType.button;
-
-    if (isAxis) {
-      final positive = '${event.gamepadId}:${event.key}:+';
-      final negative = '${event.gamepadId}:${event.key}:-';
-
-      if (event.value >= 0.9) {
-        _activeInputs.add(positive);
-        _activeInputs.remove(negative);
-        _handleGamepadInput(positive);
-      } else if (event.value <= -0.9) {
-        _activeInputs.add(negative);
-        _activeInputs.remove(positive);
-        _handleGamepadInput(negative);
-      } else {
-        _activeInputs.remove(positive);
-        _activeInputs.remove(negative);
-      }
-    }
-
-    if (isButton) {
-      final input = '${event.gamepadId}:${event.key}';
-
-      if (event.value == 1.0) {
-        _activeInputs.add(input);
-        _handleGamepadInput(input);
-      } else if (event.value == 0.0) {
-        _activeInputs.remove(input);
-      }
-    }
-  }
-
-  void _handleGamepadInput(String input) {
-    final left = settings.getBinding('MoveLeft');
-    final right = settings.getBinding('MoveRight');
-
-    if (input == left) {
-      setState(
-        () => selectedTab = (selectedTab - 1 + tabs.length) % tabs.length,
-      );
-    } else if (input == right) {
-      setState(() => selectedTab = (selectedTab + 1) % tabs.length);
-    }
-  }
-
   void handleInput(String input) {
+    final up = settings.getBinding('MoveUp');
+    final down = settings.getBinding('MoveDown');
     final left = settings.getBinding('MoveLeft');
     final right = settings.getBinding('MoveRight');
+    final action = settings.getBinding('Action');
 
-    final isLeft = input == left || input == 'Arrow Left' || input == '←';
-    final isRight = input == right || input == 'Arrow Right' || input == '→';
+    final isUp = input == up || input == 'Arrow Up';
+    final isDown = input == down || input == 'Arrow Down';
+    final isLeft = input == left || input == 'Arrow Left';
+    final isRight = input == right || input == 'Arrow Right';
+    final isAction = input == action || input == 'Enter' || input == 'Space';
 
-    if (isLeft) {
-      setState(
-        () => selectedTab = (selectedTab - 1 + tabs.length) % tabs.length,
-      );
-    } else if (isRight) {
-      setState(() => selectedTab = (selectedTab + 1) % tabs.length);
+    if (selectingPartyMember) {
+      if (isUp || isDown) {
+        setState(() {
+          selectedPartyIndex =
+              (selectedPartyIndex + (isDown ? 1 : -1) + _dialogParty.length) %
+              _dialogParty.length;
+          _partyDialogScrollController.animateTo(
+            selectedPartyIndex * 56.0,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeInOut,
+          );
+        });
+      } else if (isAction) {
+        if (!_partySelectionCompleter!.isCompleted) {
+          Navigator.of(context).pop();
+          _partySelectionCompleter!.complete(_dialogParty[selectedPartyIndex]);
+        }
+      } else if (input == settings.getBinding('Back') || input == 'Backspace') {
+        if (!_partySelectionCompleter!.isCompleted) {
+          Navigator.of(context).pop();
+          _partySelectionCompleter!.complete(null); // user canceled
+        }
+      }
+      return;
+    }
+
+    // Handle inventory
+    if (selectedTab == 0) {
+      final items =
+          widget.player.inventory
+              .where((item) => item.type != ItemType.currency)
+              .toList();
+
+      if (isUp || isDown) {
+        setState(() {
+          selectedInventoryIndex =
+              (selectedInventoryIndex + (isDown ? 1 : -1) + items.length) %
+              items.length;
+          _inventoryScrollController.animateTo(
+            selectedInventoryIndex * 56.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+          );
+        });
+      } else if (isAction && items.isNotEmpty) {
+        _useItem(items[selectedInventoryIndex]);
+      }
+    }
+
+    // Tab switching
+    if (isLeft || isRight) {
+      setState(() {
+        selectedTab =
+            (selectedTab + (isRight ? 1 : -1) + tabs.length) % tabs.length;
+      });
+    }
+
+    if (selectedTab == 2) {
+      final party = [widget.player, ...widget.player.currentParty];
+
+      if (isUp || isDown) {
+        setState(() {
+          selectedPartyStatsIndex =
+              (selectedPartyStatsIndex + (isDown ? 1 : -1) + party.length) %
+              party.length;
+
+          if (_partyStatsScrollController.hasClients) {
+            _partyStatsScrollController.animateTo(
+              selectedPartyStatsIndex * 120.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+            );
+          }
+        });
+      }
+
+      return; // prevent fall-through
     }
   }
 
-  void _useItem(Item item) async {
-    final List<BattleCharacter> party = [
-      widget.player,
-      ...widget.player.currentParty,
-    ];
+  Future<BattleCharacter?> _selectPartyMember(List<BattleCharacter> party) {
+    int selectedIndex = 0;
+    final controller = ScrollController();
 
-    if (item.isConsumable) {
-      final selected = await showDialog<BattleCharacter>(
-        context: context,
-        builder:
-            (context) => AlertDialog(
-              backgroundColor: Colors.black,
-              title: const Text(
-                'Use on who?',
-                style: TextStyle(color: Colors.white),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children:
-                    party.map((member) {
-                      return ListTile(
-                        title: Text(
-                          member.name,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        subtitle: Text(
-                          'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
-                          style: const TextStyle(color: Colors.white54),
-                        ),
-                        onTap: () => Navigator.pop(context, member),
-                      );
-                    }).toList(),
-              ),
+    return showDialog<BattleCharacter>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        void updateSelection(int direction) {
+          selectedIndex =
+              (selectedIndex + direction + party.length) % party.length;
+          controller.animateTo(
+            selectedIndex * 56.0,
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeInOut,
+          );
+          (context as Element).markNeedsBuild();
+        }
+
+        void onInput(RawKeyEvent input) {
+          final up = settings.getBinding('MoveUp');
+          final down = settings.getBinding('MoveDown');
+          final action = settings.getBinding('Action');
+
+          if (input == up || input == 'Arrow Up') {
+            updateSelection(-1);
+          } else if (input == down || input == 'Arrow Down') {
+            updateSelection(1);
+          } else if (input == action || input == 'Enter' || input == 'Space') {
+            Navigator.of(context).pop(party[selectedIndex]);
+          }
+        }
+
+        RawKeyboard.instance.addListener(onInput);
+
+        return AlertDialog(
+          backgroundColor: Colors.black,
+          title: const Text(
+            'Use on who?',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: SizedBox(
+            height: 250,
+            child: ListView.builder(
+              controller: controller,
+              itemCount: party.length,
+              itemBuilder: (context, i) {
+                final member = party[i];
+                return Container(
+                  color:
+                      i == selectedIndex ? Colors.amber.withOpacity(0.2) : null,
+                  child: ListTile(
+                    title: Text(
+                      member.name,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
+                      style: const TextStyle(color: Colors.white54),
+                    ),
+                    onTap: () => Navigator.pop(context, member),
+                  ),
+                );
+              },
             ),
-      );
+          ),
+        );
+      },
+    );
+  }
 
+  void _useItem(Item item) {
+    final party = [
+      widget.player as BattleCharacter,
+      ...(widget.player.currentParty as List<BattleCharacter>),
+    ];
+    setState(() {
+      selectingPartyMember = true;
+      _dialogParty = party as List<BattleCharacter>;
+      selectedPartyIndex = 0;
+      _partySelectionCompleter = Completer<BattleCharacter?>();
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder:
+          (_) => StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                backgroundColor: Colors.black,
+                title: const Text(
+                  'Use on who?',
+                  style: TextStyle(color: Colors.white),
+                ),
+                content: Container(
+                  width:
+                      double.maxFinite, // ensures no intrinsic width measuring
+                  constraints: const BoxConstraints(
+                    maxHeight: 300,
+                    minHeight: 100,
+                  ),
+                  child: ListView.builder(
+                    controller: _partyDialogScrollController,
+                    itemCount: _dialogParty.length,
+                    itemBuilder: (context, i) {
+                      final member = _dialogParty[i];
+                      final isSelected = i == selectedPartyIndex;
+
+                      return Scrollbar(
+                        controller: _partyDialogScrollController,
+                        thumbVisibility: true,
+                        child: Container(
+                          color:
+                              isSelected ? Colors.amber.withOpacity(0.2) : null,
+                          child: ListTile(
+                            title: Text(
+                              member.name,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
+                              style: const TextStyle(color: Colors.white54),
+                            ),
+                            onTap: () {
+                              if (!_partySelectionCompleter!.isCompleted) {
+                                Navigator.of(context).pop();
+                                _partySelectionCompleter!.complete(member);
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+    ).then((_) {
+      selectingPartyMember = false;
+      _dialogParty = [];
+    });
+
+    _partySelectionCompleter!.future.then((selected) {
       if (selected != null) {
         setState(() {
           selected.heal(item.value ?? 0);
           widget.player.removeItem(item);
         });
       }
-    }
+    });
   }
 
   Widget _buildInventory() {
-    final items = widget.player.inventory;
+    final items =
+        widget.player.inventory
+            .where((item) => item.type != ItemType.currency)
+            .toList();
 
     if (items.isEmpty) {
       return const Text(
@@ -169,29 +306,26 @@ class PauseMenuState extends State<PauseMenu> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children:
-          items.map((item) {
-            if (item.type == ItemType.currency) return Container();
-            return Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    item.name,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => _useItem(item),
-                  child: const Text(
-                    'Use',
-                    style: TextStyle(color: Colors.amber),
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
+    return ListView.builder(
+      controller: _inventoryScrollController,
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final isSelected = index == selectedInventoryIndex;
+
+        return Container(
+          color:
+              isSelected ? Colors.amber.withOpacity(0.2) : Colors.transparent,
+          child: ListTile(
+            title: Text(item.name, style: const TextStyle(color: Colors.white)),
+            trailing: TextButton(
+              onPressed: () => _useItem(item),
+              child: const Text('Use', style: TextStyle(color: Colors.amber)),
+            ),
+          ),
+        );
+      },
+      shrinkWrap: true,
     );
   }
 
@@ -202,44 +336,51 @@ class PauseMenuState extends State<PauseMenu> {
     );
   }
 
+  int selectedPartyStatsIndex = 0;
+  final ScrollController _partyStatsScrollController = ScrollController();
+
   Widget _buildPartyStats() {
     List<BattleCharacter> party = [
       widget.player,
       ...widget.player.currentParty,
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children:
-          party.map((member) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${member.name} - Lvl ${member.stats.level}',
-                    style: const TextStyle(color: Colors.white),
+    return SizedBox(
+      height: 300, // or any reasonable value
+      child: ListView.builder(
+        controller: _partyStatsScrollController,
+        itemCount: party.length,
+        itemBuilder: (context, i) {
+          final member = party[i];
+          final isSelected = i == selectedPartyStatsIndex;
+
+          return Container(
+            color: isSelected ? Colors.amber.withOpacity(0.2) : null,
+            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${member.name} - Lvl ${member.stats.level}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                Text(
+                  'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const Text('Attacks:', style: TextStyle(color: Colors.white70)),
+                ...member.attacks.map(
+                  (a) => Text(
+                    '- ${a.name} (${a.type.name}, ${a.power}x)',
+                    style: const TextStyle(color: Colors.white54),
                   ),
-                  Text(
-                    'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  const Text(
-                    'Attacks:',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  ...member.attacks.map(
-                    (a) => Text(
-                      '- ${a.name} (${a.type.name}, ${a.power}x)',
-                      style: const TextStyle(color: Colors.white54),
-                    ),
-                  ),
-                  const Divider(color: Colors.white24),
-                ],
-              ),
-            );
-          }).toList(),
+                ),
+                const Divider(color: Colors.white24),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 

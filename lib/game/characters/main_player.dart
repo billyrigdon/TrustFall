@@ -147,6 +147,7 @@ class MainPlayer extends SpriteAnimationComponent
     await loadInventory();
     await loadAttacks();
     await loadParty();
+    handleMoving(1);
   }
 
   List<Attack> _defaultAttacks() => [
@@ -188,9 +189,7 @@ class MainPlayer extends SpriteAnimationComponent
     }
   }
 
-  @override
-  void update(double dt) {
-    super.update(dt);
+  handleMoving(double? dt) {
     moveDirection = Vector2.zero();
 
     final up = settings.getBinding('MoveUp');
@@ -234,8 +233,7 @@ class MainPlayer extends SpriteAnimationComponent
       animation = walkUp;
     }
 
-    // 💨 Move
-    if (moveDirection.length > 0) {
+    if (moveDirection.length > 0 && dt != null) {
       _lastSafePosition = position.clone();
       moveDirection.normalize();
       position += moveDirection * speed * dt;
@@ -257,6 +255,13 @@ class MainPlayer extends SpriteAnimationComponent
           break;
       }
     }
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    handleMoving(dt);
+    // print(dt);
   }
 
   @override

@@ -196,13 +196,16 @@ class TrustFall extends FlameGame
       }
     } else {
       if (isPressed) {
-        final talk = settings.getBinding('Talk');
+        final back = settings.getBinding('Back');
         final pause = settings.getBinding('Pause');
         final battle = settings.getBinding('Battle');
+        final action = settings.getBinding('Action');
 
-        if (label == talk || label == 'Enter') {
-          showTextBox();
+        if (label == action || label == 'Enter') {
+          // showTextBox();
         }
+
+        if (label == back || label == 'Backspace') {}
 
         if (label == pause || label == "P" || label == 'Key P') {
           togglePause();

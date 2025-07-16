@@ -42,7 +42,7 @@ class SettingsMenuState extends State<SettingsMenu> {
     'MoveLeft': null,
     'MoveRight': null,
     'Action': null,
-    'Talk': null,
+    'Back': null,
     'Pause': null,
     'Battle': null,
   };
@@ -86,6 +86,7 @@ class SettingsMenuState extends State<SettingsMenu> {
     final up = service.getBinding('MoveUp');
     final down = service.getBinding('MoveDown');
     final action = service.getBinding('Action');
+    final back = service.getBinding('Back');
 
     final isUp = inputLabel == up || inputLabel == 'Arrow Up';
     final isDown = inputLabel == down || inputLabel == 'Arrow Down';
@@ -94,6 +95,8 @@ class SettingsMenuState extends State<SettingsMenu> {
         inputLabel == 'Enter' ||
         inputLabel == LogicalKeyboardKey.enter.keyLabel ||
         inputLabel == 'A';
+
+    final isBack = inputLabel == back || inputLabel == 'Backspace';
 
     if (isDown) {
       if (mounted)
@@ -106,7 +109,23 @@ class SettingsMenuState extends State<SettingsMenu> {
         );
       _scrollToSelectedItem();
     } else if (isAction) {
-      if (mounted) _triggerSelectedItem();
+      var isListening = false;
+      if (selectedIndex < _keyRowKeys.length) {
+        final key = _keyRowKeys[selectedIndex];
+        if (key.currentState?.listening ?? false) {
+          isListening = true;
+        }
+      }
+      if (mounted && !isListening) _triggerSelectedItem();
+    } else if (isBack) {
+      var isListening = false;
+      if (selectedIndex < _keyRowKeys.length) {
+        final key = _keyRowKeys[selectedIndex];
+        if (key.currentState?.listening ?? false) {
+          isListening = true;
+        }
+      }
+      if (mounted && !isListening) widget.game.returnToStartMenu();
     }
   }
 
@@ -169,7 +188,7 @@ class SettingsMenuState extends State<SettingsMenu> {
   }
 
   final List<GlobalKey<KeyBindingRowState>> _keyRowKeys = [
-    GlobalKey(), // Talk
+    GlobalKey(), // Back
     GlobalKey(), // Pause
     GlobalKey(), // Battle
     GlobalKey(), // MoveUp
@@ -266,17 +285,7 @@ class SettingsMenuState extends State<SettingsMenu> {
   Widget _buildBackButton() {
     return ElevatedButton(
       onPressed: () {
-        // widget.game.overlays.remove('SettingsMenu');
-        // if (Platform.isAndroid || Platform.isIOS)
-        // widget.game.overlays.remove('TouchControls');
-
         widget.game.returnToStartMenu();
-        //   widget.game.playerIsInMenu = true;
-        //   widget.game.playerIsInSettingsMenu = false;
-        //   widget.game.overlays.add('StartMenu');
-        //   widget.game.keyboardListenerKey.currentState?.regainFocus();
-        //   if (Platform.isAndroid || Platform.isIOS)
-        //     widget.game.ensureTouchControls();
       },
       child: const Text('Back'),
     );
@@ -334,7 +343,7 @@ class SettingsMenuState extends State<SettingsMenu> {
     }
 
     final settingsItems = <Widget>[
-      _buildKeyRow('Talk', 'Talk', _keyRowKeys[0]),
+      _buildKeyRow('Back', 'Back', _keyRowKeys[0]),
       _buildKeyRow('Pause', 'Pause', _keyRowKeys[1]),
       _buildKeyRow('Start Battle', 'Battle', _keyRowKeys[2]),
       _buildKeyRow('Move Up', 'MoveUp', _keyRowKeys[3]),

@@ -113,7 +113,11 @@ class TouchControls extends StatelessWidget {
 
         // A and B buttons (Bottom Right)
         Positioned(right: 40, bottom: 80, child: _styledButton('Enter', 'A')),
-        Positioned(right: 100, bottom: 40, child: _styledButton('Key B', 'B')),
+        Positioned(
+          right: 100,
+          bottom: 40,
+          child: _styledButton('Backspace', 'B'),
+        ),
       ],
     );
   }

@@ -10,14 +10,13 @@ import 'package:game/models/items.dart';
 import 'package:game/main.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:game/widgets/health_bar.dart';
-import 'package:gamepads/gamepads.dart';
 
 class BattleOverlay extends StatefulWidget {
   final TrustFall game;
   final List<BattleCharacter> party;
   final game_enemy.Enemy enemy;
 
-  BattleOverlay({
+  const BattleOverlay({
     super.key,
     required this.game,
     required this.party,
@@ -36,7 +35,6 @@ class BattleOverlayState extends State<BattleOverlay> {
   int attackIndex = 0;
   String? battleMessage;
   int turnIndex = 0;
-  StreamSubscription<GamepadEvent>? _gamepadSub;
   final SettingsService settings = SettingsService();
   List<String> queuedMessages = [];
   bool awaitingInputForMessage = false;
@@ -72,13 +70,28 @@ class BattleOverlayState extends State<BattleOverlay> {
     final left = settings.getBinding('MoveLeft');
     final right = settings.getBinding('MoveRight');
     final action = settings.getBinding('Action');
-
+    final back = settings.getBinding('Back');
     final isRight = inputLabel == right || inputLabel == 'Arrow Right';
     final isLeft = inputLabel == left || inputLabel == 'Arrow Left';
     final isDown = inputLabel == down || inputLabel == 'Arrow Down';
     final isUp = inputLabel == up || inputLabel == 'Arrow Up';
     final isAction =
         inputLabel == action || inputLabel == 'Enter' || inputLabel == 'Space';
+
+    final isBack = inputLabel == back || inputLabel == 'Backspace';
+
+    if (isBack) {
+      if (itemMenuOpen || attackMenuOpen) {
+        setState(() {
+          itemMenuOpen = false;
+          attackMenuOpen = false;
+          selectedIndex = 0;
+          attackIndex = 0;
+        });
+        return;
+      }
+    }
+
 
     if (isRight && !itemMenuOpen && !attackMenuOpen) {
       setState(() => selectedIndex = (selectedIndex + 1) % commands.length);
@@ -343,11 +356,14 @@ class BattleOverlayState extends State<BattleOverlay> {
   }
 
   Widget _buildItemMenu() {
+    final filteredItems =
+        mainInventory.where((item) => item.type != ItemType.currency).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.generate(mainInventory.length, (i) {
+      children: List.generate(filteredItems.length, (i) {
         final selected = i == selectedIndex;
-        final item = mainInventory[i];
+        final item = filteredItems[i];
         return Text(
           '${selected ? '▶' : '  '} ${item.name}',
           style: TextStyle(
