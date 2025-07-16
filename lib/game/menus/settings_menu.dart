@@ -59,8 +59,8 @@ class SettingsMenuState extends State<SettingsMenu> {
   void initState() {
     super.initState();
 
-    RawKeyboard.instance.addListener(_onKey);
-    Gamepads.events.listen(_onGamepad);
+    // RawKeyboard.instance.addListener(_onKey);
+    // Gamepads.events.listen(_onGamepad);
     // if (Platform.isAndroid) widget.game.overlays.add('TouchControls');
     // print('touch controls');
     settings.load().then((_) {
@@ -120,29 +120,29 @@ class SettingsMenuState extends State<SettingsMenu> {
     );
   }
 
-  void _onKey(RawKeyEvent event) {
-    if (event is RawKeyDownEvent) {
-      final keyLabel =
-          event.logicalKey.keyLabel.isEmpty
-              ? event.logicalKey.debugName ?? ''
-              : event.logicalKey.keyLabel;
-      print(keyLabel);
-      handleInput(keyLabel);
-    }
-  }
+  // void _onKey(RawKeyEvent event) {
+  //   if (event is RawKeyDownEvent) {
+  //     final keyLabel =
+  //         event.logicalKey.keyLabel.isEmpty
+  //             ? event.logicalKey.debugName ?? ''
+  //             : event.logicalKey.keyLabel;
+  //     print(keyLabel);
+  //     handleInput(keyLabel);
+  //   }
+  // }
 
-  void _onGamepad(GamepadEvent event) {
-    if (event.value == 1.0 && event.type == KeyType.button) {
-      final label = '${event.gamepadId}:${event.key}';
-      handleInput(label);
-    } else if ((event.type.toString().contains('axis') ||
-            event.type == KeyType.analog) &&
-        event.value.abs() > 0.9) {
-      final dir = event.value > 0 ? '+' : '-';
-      final label = '${event.gamepadId}:${event.key}:$dir';
-      handleInput(label);
-    }
-  }
+  // void _onGamepad(GamepadEvent event) {
+  //   if (event.value == 1.0 && event.type == KeyType.button) {
+  //     final label = '${event.gamepadId}:${event.key}';
+  //     handleInput(label);
+  //   } else if ((event.type.toString().contains('axis') ||
+  //           event.type == KeyType.analog) &&
+  //       event.value.abs() > 0.9) {
+  //     final dir = event.value > 0 ? '+' : '-';
+  //     final label = '${event.gamepadId}:${event.key}:$dir';
+  //     handleInput(label);
+  //   }
+  // }
 
   Widget dropdownSetting({
     required String label,
@@ -266,15 +266,17 @@ class SettingsMenuState extends State<SettingsMenu> {
   Widget _buildBackButton() {
     return ElevatedButton(
       onPressed: () {
-        widget.game.overlays.remove('SettingsMenu');
-        if (Platform.isAndroid || Platform.isIOS)
-          widget.game.overlays.remove('TouchControls');
-        widget.game.overlays.add('StartMenu');
-        // if (Platform.isAndroid) widget.game.overlays.add('TouchControls');
-        widget.game.playerIsInMenu = true;
-        widget.game.playerIsInSettingsMenu = false;
-        if (Platform.isAndroid || Platform.isIOS)
-          widget.game.ensureTouchControls();
+        // widget.game.overlays.remove('SettingsMenu');
+        // if (Platform.isAndroid || Platform.isIOS)
+        // widget.game.overlays.remove('TouchControls');
+
+        widget.game.returnToStartMenu();
+        //   widget.game.playerIsInMenu = true;
+        //   widget.game.playerIsInSettingsMenu = false;
+        //   widget.game.overlays.add('StartMenu');
+        //   widget.game.keyboardListenerKey.currentState?.regainFocus();
+        //   if (Platform.isAndroid || Platform.isIOS)
+        //     widget.game.ensureTouchControls();
       },
       child: const Text('Back'),
     );
@@ -303,16 +305,20 @@ class SettingsMenuState extends State<SettingsMenu> {
       case 12:
         if (!Platform.isAndroid) {
           widget.game.overlays.remove('SettingsMenu');
+          widget.game.playerIsInSettingsMenu = false;
+          widget.game.playerIsInMenu = true;
           widget.game.overlays.add('StartMenu');
+          widget.game.keyboardListenerKey.currentState?.regainFocus();
           widget.game.resumeEngine();
         }
         break;
       case 13:
         widget.game.overlays.remove('SettingsMenu');
         widget.game.overlays.remove('TouchControls');
-        widget.game.overlays.add('StartMenu');
         widget.game.playerIsInSettingsMenu = false;
         widget.game.playerIsInMenu = true;
+        widget.game.overlays.add('StartMenu');
+        widget.game.keyboardListenerKey.currentState?.regainFocus();
         widget.game.ensureTouchControls();
         break;
     }

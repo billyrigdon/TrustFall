@@ -55,51 +55,18 @@ class BattleOverlayState extends State<BattleOverlay> {
     battleManager = BattleManager(party: widget.party, enemy: widget.enemy);
     battleManager.reset();
 
-    RawKeyboard.instance.addListener(_onKey);
-    _gamepadSub = Gamepads.events.listen(_onGamepad);
+    // RawKeyboard.instance.addListener(_onKey);
+    // _gamepadSub = Gamepads.events.listen(_onGamepad);
   }
 
   @override
   void dispose() {
-    RawKeyboard.instance.removeListener(_onKey);
-    _gamepadSub?.cancel();
+    // RawKeyboard.instance.removeListener(_onKey);
+    // _gamepadSub?.cancel();
     super.dispose();
   }
 
-  void _onKey(RawKeyEvent event) {
-    if (!battleManager.playerTurn || battleManager.battleEnded) return;
-    if (event is! RawKeyDownEvent) return;
-
-    final label =
-        event.logicalKey.keyLabel.isNotEmpty
-            ? event.logicalKey.keyLabel
-            : event.logicalKey.debugName ?? '';
-
-    handleInput(label);
-  }
-
-  void _onGamepad(GamepadEvent event) {
-    if (!battleManager.playerTurn || battleManager.battleEnded) return;
-
-    final typeStr = event.type.toString();
-    final isAxis = typeStr.contains('axis') || event.type == KeyType.analog;
-    final isButton = event.type == KeyType.button;
-
-    if (isAxis && event.value.abs() > 0.9) {
-      final dir = event.value > 0 ? '+' : '-';
-      final input = '${event.gamepadId}:${event.key}:$dir';
-      handleInput(input);
-    }
-
-    if (isButton && event.value == 1.0) {
-      final input = '${event.gamepadId}:${event.key}';
-      handleInput(input);
-    }
-  }
-
   void handleInput(String inputLabel) {
-    print('handling input');
-    print(inputLabel);
     final up = settings.getBinding('MoveUp');
     final down = settings.getBinding('MoveDown');
     final left = settings.getBinding('MoveLeft');

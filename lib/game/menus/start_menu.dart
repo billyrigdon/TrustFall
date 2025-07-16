@@ -21,15 +21,15 @@ class StartMenuState extends State<StartMenu> {
   final List<String> options = ['New Game', 'Load Game', 'Settings', 'Exit'];
   final SettingsService settings = SettingsService();
 
-  StreamSubscription<GamepadEvent>? _gamepadSub;
+  // StreamSubscription<GamepadEvent>? _gamepadSub;
 
   bool isReady = false;
 
   @override
   void initState() {
     super.initState();
-    RawKeyboard.instance.addListener(_onKey);
-    _gamepadSub = Gamepads.events.listen(_onGamepad);
+    // RawKeyboard.instance.addListener(_onKey);
+    // _gamepadSub = Gamepads.events.listen(_onGamepad);
 
     SettingsService().load().then((_) {
       setState(() {
@@ -40,59 +40,60 @@ class StartMenuState extends State<StartMenu> {
 
   @override
   void dispose() {
-    RawKeyboard.instance.removeListener(_onKey);
-    _gamepadSub?.cancel();
+    // RawKeyboard.instance.removeListener(_onKey);
+    // _gamepadSub?.cancel();
     super.dispose();
   }
 
-  void _onKey(RawKeyEvent event) {
-    if (event is! RawKeyDownEvent) return;
+  // void _onKey(RawKeyEvent event) {
+  //   if (event is! RawKeyDownEvent) return;
 
-    final keyLabel =
-        event.logicalKey.keyLabel.isEmpty
-            ? event.logicalKey.debugName ?? ''
-            : event.logicalKey.keyLabel;
+  //   final keyLabel =
+  //       event.logicalKey.keyLabel.isEmpty
+  //           ? event.logicalKey.debugName ?? ''
+  //           : event.logicalKey.keyLabel;
 
-    handleInput(keyLabel);
-  }
+  //   handleInput(keyLabel);
+  // }
 
-  void _onGamepad(GamepadEvent event) {
-    final typeString = event.type.toString();
+  // void _onGamepad(GamepadEvent event) {
+  //   final typeString = event.type.toString();
 
-    final isAxis = typeString.contains('axis') || typeString.contains('analog');
+  //   final isAxis = typeString.contains('axis') || typeString.contains('analog');
 
-    if (isAxis && event.value.abs() > 0.9) {
-      final direction = event.value > 0 ? '+' : '-';
-      final input = '${event.gamepadId}:${event.key}:$direction';
+  //   if (isAxis && event.value.abs() > 0.9) {
+  //     final direction = event.value > 0 ? '+' : '-';
+  //     final input = '${event.gamepadId}:${event.key}:$direction';
 
-      final up = settings.getBinding('MoveUp');
-      final down = settings.getBinding('MoveDown');
-      final left = settings.getBinding('MoveLeft');
-      final right = settings.getBinding('MoveRight');
+  //     final up = settings.getBinding('MoveUp');
+  //     final down = settings.getBinding('MoveDown');
+  //     final left = settings.getBinding('MoveLeft');
+  //     final right = settings.getBinding('MoveRight');
 
-      print(
-        '[Axis] input=$input | up=$up, down=$down, left=$left, right=$right',
-      );
+  //     print(
+  //       '[Axis] input=$input | up=$up, down=$down, left=$left, right=$right',
+  //     );
 
-      if (input == up)
-        handleInput(up);
-      else if (input == down)
-        handleInput(down);
-      else if (input == left)
-        handleInput(left);
-      else if (input == right)
-        handleInput(right);
-    }
+  //     if (input == up)
+  //       handleInput(up);
+  //     else if (input == down)
+  //       handleInput(down);
+  //     else if (input == left)
+  //       handleInput(left);
+  //     else if (input == right)
+  //       handleInput(right);
+  //   }
 
-    if (event.type == KeyType.button && event.value == 1.0) {
-      final input = '${event.gamepadId}:${event.key}';
-      final action = settings.getBinding('Action');
-      print('[Button] input=$input | action=$action');
-      if (input == action) handleInput(action);
-    }
-  }
+  //   if (event.type == KeyType.button && event.value == 1.0) {
+  //     final input = '${event.gamepadId}:${event.key}';
+  //     final action = settings.getBinding('Action');
+  //     print('[Button] input=$input | action=$action');
+  //     if (input == action) handleInput(action);
+  //   }
+  // }
 
   void handleInput(String inputLabel) {
+    print('----------------------------');
     if (!isReady) return;
 
     final up = settings.getBinding('MoveUp');
@@ -143,10 +144,10 @@ class StartMenuState extends State<StartMenu> {
         widget.game.overlays.remove('StartMenu');
         widget.game.overlays.remove('TouchControls');
         widget.game.playerIsInSettingsMenu = true;
-        widget.game.overlays.add('SettingsMenu');
-        widget.game.ensureTouchControls();
         widget.game.playerIsInMenu = false;
-
+        widget.game.overlays.add('SettingsMenu');
+        widget.game.keyboardListenerKey.currentState?.regainFocus();
+        widget.game.ensureTouchControls();
         // if (Platform.isAndroid) widget.game.overlays.add('TouchControls');
         // widget.game.resumeEngine();
         break;

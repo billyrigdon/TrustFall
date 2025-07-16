@@ -141,8 +141,6 @@ class MainPlayer extends SpriteAnimationComponent
 
     idleAnimation = idleDown;
 
-    _gamepadSub = Gamepads.events.listen(_handleGamepad);
-
     stats = await CharacterStats.load(name, CharacterClass.balanced);
 
     await _loadHPFromPrefs();
@@ -281,46 +279,6 @@ class MainPlayer extends SpriteAnimationComponent
   }
 
   @override
-  bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
-    final keyLabel =
-        event.logicalKey.keyLabel.isEmpty
-            ? event.logicalKey.debugName ?? ''
-            : event.logicalKey.keyLabel;
-
-    if (event is KeyDownEvent) {
-      _activeInputs.add(keyLabel);
-
-      final talk = settings.getBinding('Talk');
-      final pause = settings.getBinding('Pause');
-      final battle = settings.getBinding('Battle');
-
-      if (keyLabel == talk || keyLabel == 'Space') gameRef.showTextBox();
-      if (keyLabel == pause || keyLabel == 'Key P') gameRef.togglePause();
-      if ((keyLabel == battle || keyLabel == 'Key B') && !gameRef.inBattle) {
-        gameRef.startBattle(
-          [this, ...currentParty],
-          Enemy(
-            name: 'Cat',
-            level: 2,
-            stats: CharacterStats(
-              charClass: CharacterClass.balanced,
-              maxHp: 60,
-              strength: 10,
-            ),
-            attacks: [
-              Attack(name: 'Punch', type: AttackType.physical, power: 1.0),
-            ],
-          ),
-        );
-      }
-    } else if (event is KeyUpEvent) {
-      _activeInputs.remove(keyLabel);
-    }
-
-    return true;
-  }
-
-  @override
   void takeDamage(int damage) {
     currentHP = (currentHP - damage).clamp(0, stats.maxHp.toInt());
     _saveHPToPrefs();
@@ -346,62 +304,6 @@ class MainPlayer extends SpriteAnimationComponent
 
   @override
   bool get isAlive => currentHP > 0;
-
-  void _handleGamepad(GamepadEvent event) {
-    final typeStr = event.type.toString();
-    final isAxis = typeStr.contains('axis') || typeStr.contains('analog');
-    final isButton = event.type == KeyType.button;
-
-    if (isAxis) {
-      final positive = '${event.gamepadId}:${event.key}:+';
-      final negative = '${event.gamepadId}:${event.key}:-';
-
-      if (event.value >= 0.9) {
-        _activeInputs.add(positive);
-        _activeInputs.remove(negative);
-      } else if (event.value <= -0.9) {
-        _activeInputs.add(negative);
-        _activeInputs.remove(positive);
-      } else {
-        _activeInputs.remove(positive);
-        _activeInputs.remove(negative);
-      }
-    }
-
-    if (isButton) {
-      final input = '${event.gamepadId}:${event.key}';
-
-      final action = settings.getBinding('Action');
-      final pause = settings.getBinding('Pause');
-      final battle = settings.getBinding('Battle');
-      final talk = settings.getBinding('Talk');
-
-      if (event.value == 1.0) {
-        if (input == action) _activeInputs.add(input);
-        if (input == talk) gameRef.showTextBox();
-        if (input == pause) gameRef.togglePause();
-        if (input == battle && !gameRef.inBattle) {
-          gameRef.startBattle(
-            [this, ...currentParty],
-            Enemy(
-              name: 'Slime Cat',
-              level: 2,
-              stats: CharacterStats(
-                charClass: CharacterClass.balanced,
-                maxHp: 60,
-                strength: 10,
-              ),
-              attacks: [
-                Attack(name: 'Scratch', type: AttackType.physical, power: 1.0),
-              ],
-            ),
-          );
-        }
-      } else if (event.value == 0.0) {
-        _activeInputs.remove(input);
-      }
-    }
-  }
 
   @override
   List<Item> inventory = [];
@@ -516,9 +418,6 @@ class MainPlayer extends SpriteAnimationComponent
       _activeInputs.remove(label);
     }
   }
-
-
-
 
   @override
   List<PartyMember> currentParty = [];

@@ -15,6 +15,7 @@ import 'package:game/game/scenes/main_player_house/main_player_house.dart';
 import 'package:game/game/scenes/main_player_house/main_player_house_room.dart';
 import 'package:game/models/character_stats.dart';
 import 'package:game/services/settings_service.dart';
+import 'package:game/widgets/keyboard_gamepad_handler.dart';
 import 'package:game/widgets/touch_overlay.dart';
 import 'package:game/widgets/trust_fall_text_box.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,51 +27,64 @@ void main() async {
   final settingsMenuKey = GlobalKey<SettingsMenuState>();
   final pauseMenuKey = GlobalKey<PauseMenuState>();
   final battleMenuKey = GlobalKey<BattleOverlayState>();
+  final keyboardListenerKey = GlobalKey<KeyboardGamepadListenerState>();
+
+  final trustFallGame = TrustFall(
+    startMenuKey,
+    settingsMenuKey,
+    pauseMenuKey,
+    battleMenuKey,
+    keyboardListenerKey,
+  );
+
+  final inputHandler = trustFallGame.handleTouchInput;
 
   runApp(
     MaterialApp(
       title: 'TrustFall',
       theme: ThemeData.dark(),
       home: Scaffold(
-        body: GameWidget(
-          game: TrustFall(
-            startMenuKey,
-            settingsMenuKey,
-            pauseMenuKey,
-            battleMenuKey,
-          ),
-          overlayBuilderMap: {
-            'TextBox': (context, game) => const TrustFallTextBox(),
-            'PauseMenu':
-                (context, game) => PauseMenu(
-                  key: pauseMenuKey,
-                  player: (game as TrustFall).player,
-                ),
-            'BattleOverlay': (context, game) {
-              final trustFall = game as TrustFall;
-              return BattleOverlay(
-                key: battleMenuKey,
-                game: trustFall,
-                party: trustFall.currentParty,
-                enemy: trustFall.currentEnemy,
-              );
-            },
-            'StartMenu':
-                (context, game) =>
-                    StartMenu(key: startMenuKey, game: game as TrustFall),
+        body: Stack(
+          children: [
+            GameWidget(
+              game: trustFallGame,
+              overlayBuilderMap: {
+                'TextBox': (context, _) => const TrustFallTextBox(),
+                'PauseMenu':
+                    (context, _) => PauseMenu(
+                      key: pauseMenuKey,
+                      player: trustFallGame.player,
+                    ),
+                'BattleOverlay': (context, _) {
+                  return BattleOverlay(
+                    key: battleMenuKey,
+                    game: trustFallGame,
+                    party: trustFallGame.currentParty,
+                    enemy: trustFallGame.currentEnemy,
+                  );
+                },
+                'StartMenu':
+                    (context, _) =>
+                        StartMenu(key: startMenuKey, game: trustFallGame),
 
-            'SettingsMenu':
-                (context, game) =>
-                    SettingsMenu(key: settingsMenuKey, game: game as TrustFall),
-            if (Platform.isAndroid || Platform.isIOS)
-              'TouchControls':
-                  (context, game) => TouchControls(
-                    onInput:
-                        (label, isPressed) => (game as TrustFall)
-                            .handleTouchInput(label, isPressed),
-                  ),
-          },
-          initialActiveOverlays: const ['StartMenu'],
+                'SettingsMenu':
+                    (context, _) =>
+                        SettingsMenu(key: settingsMenuKey, game: trustFallGame),
+                if (Platform.isAndroid || Platform.isIOS)
+                  'TouchControls':
+                      (context, _) => TouchControls(
+                        onInput:
+                            (label, isPressed) => trustFallGame
+                                .handleTouchInput(label, isPressed),
+                      ),
+              },
+              initialActiveOverlays: const ['StartMenu'],
+            ),
+            KeyboardGamepadListener(
+              key: keyboardListenerKey,
+              onInput: inputHandler,
+            ),
+          ],
         ),
       ),
     ),
@@ -87,16 +101,21 @@ class TrustFall extends FlameGame
   bool playerIsInMenu = true;
   bool playerIsInSettingsMenu = false;
   bool inBattle = false;
+  final settings = SettingsService();
   final GlobalKey<StartMenuState> startMenuKey;
   final GlobalKey<SettingsMenuState> settingsMenuKey;
   final GlobalKey<PauseMenuState> pauseMenuKey;
   final GlobalKey<BattleOverlayState> battleMenuKey;
+  final GlobalKey<KeyboardGamepadListenerState> keyboardListenerKey;
   TrustFall(
     this.startMenuKey,
     this.settingsMenuKey,
     this.pauseMenuKey,
     this.battleMenuKey,
-  );
+    this.keyboardListenerKey,
+  ) {
+    print('TrustFall constructor: $hashCode');
+  }
 
   void startBattle(List<BattleCharacter> party, Enemy enemy) {
     currentParty = party;
@@ -105,6 +124,8 @@ class TrustFall extends FlameGame
     overlays.remove('TouchControls');
     inBattle = true;
     overlays.add('BattleOverlay');
+    keyboardListenerKey.currentState?.regainFocus();
+
     ensureTouchControls();
   }
 
@@ -141,6 +162,19 @@ class TrustFall extends FlameGame
     }
   }
 
+  void returnToStartMenu() {
+    overlays.remove('SettingsMenu');
+    if (Platform.isAndroid || Platform.isIOS) overlays.remove('TouchControls');
+
+    playerIsInSettingsMenu = false;
+    playerIsInMenu = true;
+
+    overlays.add('StartMenu');
+    keyboardListenerKey.currentState?.regainFocus();
+
+    if (Platform.isAndroid || Platform.isIOS) ensureTouchControls();
+  }
+
   void handleTouchInput(String label, bool isPressed) {
     if (playerIsInMenu && !playerIsInSettingsMenu) {
       if (isPressed) {
@@ -148,13 +182,12 @@ class TrustFall extends FlameGame
       }
     } else if (inBattle) {
       if (isPressed) {
-        print(label);
-        print('sending to handler battle');
         battleMenuKey.currentState?.handleInput(label);
       }
     } else if (isPaused) {
+      final pause = settings.getBinding('Pause');
       if (isPressed) {
-        if (label == 'Key P') togglePause();
+        if (label == pause || label == 'Key P' || label == 'P') togglePause();
         pauseMenuKey.currentState?.handleInput(label);
       }
     } else if (playerIsInSettingsMenu) {
@@ -163,9 +196,20 @@ class TrustFall extends FlameGame
       }
     } else {
       if (isPressed) {
-        if (label == 'Enter') showTextBox();
-        if (label == 'Key P') togglePause();
-        if (label == 'Key B' && !inBattle) {
+        final talk = settings.getBinding('Talk');
+        final pause = settings.getBinding('Pause');
+        final battle = settings.getBinding('Battle');
+
+        if (label == talk || label == 'Enter') {
+          showTextBox();
+        }
+
+        if (label == pause || label == "P" || label == 'Key P') {
+          togglePause();
+        }
+
+        if ((label == battle || label == 'B' || label == 'Key B') &&
+            !inBattle) {
           startBattle(
             [player, ...currentParty],
             Enemy(
@@ -196,6 +240,8 @@ class TrustFall extends FlameGame
     } else {
       overlays.remove('PauseMenu');
     }
+    keyboardListenerKey.currentState?.regainFocus();
+
     ensureTouchControls();
   }
 
