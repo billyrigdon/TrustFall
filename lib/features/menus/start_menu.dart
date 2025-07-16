@@ -137,7 +137,6 @@ class _StartMenuState extends State<StartMenu> {
         widget.game.resumeEngine();
         break;
       case 'Load Game':
-        // TODO: Implement load logic
         break;
       case 'Settings':
         widget.game.overlays.add('SettingsMenu');
@@ -186,7 +185,20 @@ class _StartMenuState extends State<StartMenu> {
             ),
           ),
         ),
-        if (Platform.isAndroid) StartControls(onInput: _handleInput),
+        // 👇 Touch controls here
+        if (Platform.isAndroid || Platform.isIOS)
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: !Platform.isAndroid && !Platform.isIOS,
+              child: TouchControls(
+                onInput: (label, isPressed) {
+                  if (isPressed) {
+                    _handleInput(label);
+                  }
+                },
+              ),
+            ),
+          ),
       ],
     );
   }

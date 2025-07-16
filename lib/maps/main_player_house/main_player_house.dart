@@ -1,8 +1,5 @@
-// import 'dart:math';
-
 import 'dart:io';
 import 'dart:ui';
-
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/experimental.dart';
@@ -18,10 +15,8 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
   late NotifyingVector2 mapPixelSize;
   Vector2? doorSpawnCoordinates;
   final Map<String, Vector2> spawnPoints = {};
-
   String fromOrientation = '';
 
-  // String fromRoom = '';
   @override
   Future<void> onLoad() async {
     debugMode = true;
@@ -33,50 +28,16 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     );
   }
 
-  Vector2 _getSpawnFromDoor(Vector2 doorSpawn, Vector2 userCoordinates) {
-    if (fromOrientation == 'vertical') {
-      return Vector2(userCoordinates.x, doorSpawn.y);
-    } else if (fromOrientation == 'horizontal') {
-      return Vector2(doorSpawn.x, userCoordinates.y);
-    } else
-      return Vector2(0, 0);
-  }
-
-  // final Map<String, Vector2> spawnPoints = {};
-
   void _extractDoorSpawns(TiledComponent map) {
     final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
     if (objectGroup == null) return;
 
     for (final obj in objectGroup.objects) {
-      // final hasSpawn = obj.properties.any(
-      //   (p) => p.name == 'spawn' && p.value == true,
-      // );
-      // final fromDirection =
-      //     obj.properties
-      //             .firstWhere(
-      //               (p) => p.name == 'fromDirection',
-      //               orElse:
-      //                   () => Property(
-      //                     name: '',
-      //                     type: PropertyType.string,
-      //                     value: '',
-      //                   ),
-      //             )
-      //             .value
-      //         as String;
-
-      // if (hasSpawn && fromDirection.isNotEmpty) {
-      //   final key = '$currentRoom:$fromDirection';
-      //   spawnPoints[key] = Vector2(obj.x, obj.y);
-      // }
-
       final hasSpawn = obj.properties.any(
         (p) => p.name == 'spawn' && p.value == true,
       );
 
       if (hasSpawn) {
-        print(obj.properties.toString());
         final fromRoom =
             obj.properties.firstWhere((p) => p.name == 'fromRoom').value
                 as String;
@@ -89,10 +50,7 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
           (p) => p.name == 'special_spawn' && p.value == true,
         );
 
-        // final key = '$fromRoom:$fromOrientation';
-
         final key = '$fromRoom:$fromOrientation${isSpecial ? ':special' : ''}';
-        print(key);
         spawnPoints[key] = Vector2(obj.x, obj.y);
       }
     }
@@ -105,9 +63,7 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
   }) {
     final specialKey = '$fromRoom:$orientation:special';
     final normalKey = '$fromRoom:$orientation';
-    print('spawning');
     if (spawnPoints.containsKey(specialKey)) {
-      print('spawning special');
       return spawnPoints[specialKey]!;
     }
 
@@ -228,15 +184,8 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     if (previousPosition == Vector2.zero() ||
         fromOrientation.isEmpty ||
         fromRoom.isEmpty) {
-      spawn = Vector2(
-        mapPixelSize.x - 48 - 32, // near right edge
-        mapPixelSize.y - 80 - 32, // near bottom edge
-      );
+      spawn = Vector2(mapPixelSize.x - 48 - 32, mapPixelSize.y - 80 - 32);
     } else {
-      // final spawnKey = '$fromRoom:$fromOrientation';
-      // print(spawnKey);
-      // final spawnPoint = spawnPoints[spawnKey];
-      // print(spawnPoint.toString());
       spawn =
           fromRoom.isNotEmpty
               ? getSpawnPoint(
@@ -258,6 +207,9 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     world.add(newPlayer);
   }
 
+  
+
+
   void _addCollisions(TiledComponent map) {
     final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
     if (objectGroup == null) return;
@@ -274,52 +226,6 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
       }
     }
   }
-
-  // void _addCollisions(TiledComponent map) {
-  //   final tileMap = map.tileMap.map;
-  //   final tileLayer = map.tileMap.getLayer<TileLayer>('Object');
-  //   if (tileLayer == null || tileLayer.tileData == null) return;
-
-  //   final tileData = tileLayer.tileData!;
-  //   final tilesets = tileMap.tilesets;
-  //   final tileWidth = tileMap.tileWidth.toDouble();
-  //   final tileHeight = tileMap.tileHeight.toDouble();
-
-  //   for (int y = 0; y < tileData.length; y++) {
-  //     final row = tileData[y];
-  //     for (int x = 0; x < row.length; x++) {
-  //       final gid = row[x].tile;
-
-  //       if (gid == 0) continue;
-
-  //       final tileset = tilesets.firstWhere(
-  //         (set) =>
-  //             set.firstGid != null &&
-  //             gid >= set.firstGid! &&
-  //             gid < set.firstGid! + (set.tileCount ?? 0),
-  //         orElse: () => tilesets.first,
-  //       );
-
-  //       if (tileset.firstGid == null) continue;
-
-  //       final localId = gid - tileset.firstGid!;
-  //       final tile = tileset.tiles.firstWhere(
-  //         (t) => t.localId == localId,
-  //         orElse: () => Tile(localId: 0, properties: CustomProperties.empty),
-  //       );
-
-  //       final isCollidable = tile.properties.any(
-  //         (p) => p.name == 'collidable' && p.value == true,
-  //       );
-
-  //       if (isCollidable) {
-  //         final pos = Vector2(x * tileWidth, y * tileHeight);
-  //         final size = Vector2(tileWidth, tileHeight);
-  //         gameRef.world.add(Wall(pos, size));
-  //       }
-  //     }
-  //   }
-  // }
 }
 
 class Door extends PositionComponent with CollisionCallbacks {
@@ -339,10 +245,13 @@ class Door extends PositionComponent with CollisionCallbacks {
   }
 
   @override
-  void onCollisionStart(Set<Vector2> points, PositionComponent other) {
+  void onCollisionStart(
+    Set<Vector2> intersectionPoints,
+    PositionComponent other,
+  ) {
     if (other is MainPlayer) {
       onEnter();
     }
-    super.onCollisionStart(points, other);
+    super.onCollisionStart(intersectionPoints, other);
   }
 }

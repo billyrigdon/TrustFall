@@ -38,6 +38,7 @@ dependencies:
   flame_tiled: ^3.0.4
   shared_preferences: ^2.5.3
   gamepads: ^0.1.7
+  flutter_joystick: ^0.2.2
 
 dev_dependencies:
   flutter_test:

@@ -103,6 +103,10 @@ class SettingsService {
   static const _difficultyKey = 'difficulty';
   static const _controllerSchemeKey = 'controllerScheme';
   static const _bindingPrefix = 'bind_';
+  static const _useDpadKey = 'useDpad';
+  
+  
+  bool useDpad = false;
 
   late SharedPreferences _prefs;
   bool _initialized = false;
@@ -132,6 +136,7 @@ class SettingsService {
     fontSize = _prefs.getDouble(_fontSizeKey) ?? 16.0;
     difficulty = _prefs.getString(_difficultyKey) ?? 'Normal';
     controllerScheme = _prefs.getString(_controllerSchemeKey) ?? 'WASD';
+    useDpad = _prefs.getBool(_useDpadKey) ?? false;
 
     _bindings.clear();
     for (var action in allActions) {
@@ -152,11 +157,19 @@ class SettingsService {
     await _prefs.setDouble(_fontSizeKey, fontSize);
     await _prefs.setString(_difficultyKey, difficulty);
     await _prefs.setString(_controllerSchemeKey, controllerScheme);
+    await _prefs.setBool(_useDpadKey, useDpad);
 
     for (var entry in _bindings.entries) {
       await _prefs.setString('$_bindingPrefix${entry.key}', entry.value);
     }
   }
+
+Future<void> setUseDpad(bool value) async {
+    useDpad = value;
+    await _prefs.setBool(_useDpadKey, value);
+  }
+
+  bool getUseDpad() => useDpad;
 
   String getBinding(String action) {
     return _bindings[action] ??
