@@ -5,10 +5,17 @@ import 'package:flutter/services.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:gamepads/gamepads.dart';
 
+enum GamepadInputMode { movement, menu }
+
 class KeyboardGamepadListener extends StatefulWidget {
   final void Function(String inputLabel, bool isPressed) onInput;
+  final GamepadInputMode inputMode;
 
-  const KeyboardGamepadListener({super.key, required this.onInput});
+  const KeyboardGamepadListener({
+    super.key,
+    required this.onInput,
+    this.inputMode = GamepadInputMode.menu,
+  });
 
   @override
   State<KeyboardGamepadListener> createState() =>
@@ -19,12 +26,28 @@ class KeyboardGamepadListenerState extends State<KeyboardGamepadListener> {
   final settings = SettingsService();
   final FocusNode _focusNode = FocusNode();
   StreamSubscription<GamepadEvent>? _gamepadSub;
+  Timer? _pollingTimer;
+  final Set<String> _currentlyHeldInputs = {};
+  final Map<String, DateTime> _inputHoldStart = {};
+  final Map<String, DateTime> _lastRepeat = {};
+  final Set<String> _firedOnce = {};
+
+  Duration get initialDelay =>
+      widget.inputMode == GamepadInputMode.menu
+          ? Duration(milliseconds: 250)
+          : Duration.zero;
+
+  Duration get repeatInterval =>
+      widget.inputMode == GamepadInputMode.menu
+          ? Duration(milliseconds: 200)
+          : Duration(milliseconds: 50);
 
   @override
   void initState() {
     super.initState();
     RawKeyboard.instance.addListener(_onKey);
     _gamepadSub = Gamepads.events.listen(_onGamepad);
+    _startPolling();
     _requestFocus();
   }
 
@@ -38,8 +61,37 @@ class KeyboardGamepadListenerState extends State<KeyboardGamepadListener> {
     });
   }
 
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      final now = DateTime.now();
+
+      for (final input in _currentlyHeldInputs) {
+        final start = _inputHoldStart[input] ?? now;
+        final last =
+            _lastRepeat[input] ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final heldDuration = now.difference(start);
+        final sinceLast = now.difference(last);
+
+        // Fire immediately once
+        if (!_firedOnce.contains(input)) {
+          widget.onInput(input, true);
+          _lastRepeat[input] = now;
+          _firedOnce.add(input);
+          continue;
+        }
+
+        // Wait for delay then repeat
+        if (heldDuration >= initialDelay && sinceLast >= repeatInterval) {
+          widget.onInput(input, true);
+          _lastRepeat[input] = now;
+        }
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _pollingTimer?.cancel();
     RawKeyboard.instance.removeListener(_onKey);
     _gamepadSub?.cancel();
     _focusNode.dispose();
@@ -49,9 +101,6 @@ class KeyboardGamepadListenerState extends State<KeyboardGamepadListener> {
   void _onKey(RawKeyEvent event) {
     final key = event.logicalKey;
     final label = key.keyLabel.isEmpty ? key.debugName ?? '' : key.keyLabel;
-
-    
-
 
     if (label.isEmpty) return;
 
@@ -69,20 +118,37 @@ class KeyboardGamepadListenerState extends State<KeyboardGamepadListener> {
       final axisNegative = '${event.gamepadId}:${event.key}:-';
 
       if (event.value >= 0.9) {
-        widget.onInput(axisPositive, true);
-        widget.onInput(axisNegative, false); // cancel opposite
+        _currentlyHeldInputs.add(axisPositive);
+        _inputHoldStart[axisPositive] ??= DateTime.now();
+        _firedOnce.remove(axisPositive);
       } else if (event.value <= -0.9) {
-        widget.onInput(axisNegative, true);
-        widget.onInput(axisPositive, false);
+        _currentlyHeldInputs.add(axisNegative);
+        _inputHoldStart[axisNegative] ??= DateTime.now();
+        _firedOnce.remove(axisNegative);
       } else {
-        widget.onInput(axisPositive, false);
-        widget.onInput(axisNegative, false);
+        for (final input in [axisPositive, axisNegative]) {
+          _currentlyHeldInputs.remove(input);
+          _inputHoldStart.remove(input);
+          _lastRepeat.remove(input);
+          _firedOnce.remove(input);
+          widget.onInput(input, false);
+        }
       }
     }
 
     if (isButton) {
       final input = '${event.gamepadId}:${event.key}';
       final isPressed = event.value == 1.0;
+
+      // if (isPressed) {
+      //   _currentlyHeldInputs.add(input);
+      //   _inputHoldStart[input] ??= DateTime.now();
+      // } else {
+      //   _currentlyHeldInputs.remove(input);
+      //   _inputHoldStart.remove(input);
+      //   _lastRepeat.remove(input);
+      // }
+
       widget.onInput(input, isPressed);
     }
   }

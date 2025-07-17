@@ -114,7 +114,14 @@ class PauseMenuState extends State<PauseMenu> {
     }
 
     if (selectedTab == 2) {
-      final party = [widget.player, ...widget.player.currentParty];
+      // final party = [widget.player, ...widget.player.currentParty];
+
+      final List<BattleCharacter> party = [
+        widget.player,
+        ...widget.player.currentParty.where(
+          (c) => c.name != widget.player.name,
+        ),
+      ];
 
       if (isUp || isDown) {
         setState(() {
@@ -137,10 +144,11 @@ class PauseMenuState extends State<PauseMenu> {
   }
 
   void _useItem(Item item) {
-    final party = [
-      widget.player as BattleCharacter,
-      ...(widget.player.currentParty as List<BattleCharacter>),
+    final List<BattleCharacter> party = [
+      widget.player,
+      ...widget.player.currentParty.where((c) => c.name != widget.player.name),
     ];
+
     setState(() {
       selectingPartyMember = true;
       _dialogParty = party;
@@ -266,9 +274,9 @@ class PauseMenuState extends State<PauseMenu> {
   final ScrollController _partyStatsScrollController = ScrollController();
 
   Widget _buildPartyStats() {
-    List<BattleCharacter> party = [
+    final List<BattleCharacter> party = [
       widget.player,
-      ...widget.player.currentParty,
+      ...widget.player.currentParty.where((c) => c.name != widget.player.name),
     ];
 
     return SizedBox(

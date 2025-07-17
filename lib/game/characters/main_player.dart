@@ -54,7 +54,7 @@ class MainPlayer extends SpriteAnimationComponent
   StreamSubscription<GamepadEvent>? _gamepadSub;
   final Set<String> _activeInputs = {};
 
-  MainPlayer() : super(size: Vector2(40, 60), anchor: Anchor.topLeft);
+  MainPlayer() : super(size: Vector2(30, 60), anchor: Anchor.topLeft);
 
   Future<void> _loadHPFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
@@ -82,40 +82,58 @@ class MainPlayer extends SpriteAnimationComponent
     );
 
     idleRight = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_right_1.png'),
+      await gameRef.loadSprite('main_player_1.png'),
     ], stepTime: 1.0);
 
     idleUp = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_up_1.png'),
+      await gameRef.loadSprite('main_player_back_1.png'),
     ], stepTime: 1.0);
 
     idleDown = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_bottom_1.png'),
+      await gameRef.loadSprite('main_player_front_1.png'),
     ], stepTime: 1.0);
 
     idleLeft = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_left_1.png'),
+      await gameRef.loadSprite('main_player_left_1.png'),
     ], stepTime: 1.0);
 
     walkRight = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_right_1.png'),
-      // await gameRef.loadSprite('main_right_2.png'),
-    ], stepTime: 0.2);
+      await gameRef.loadSprite('main_player_1.png'),
+      await gameRef.loadSprite('main_player_2.png'),
+      await gameRef.loadSprite('main_player_3.png'),
+      await gameRef.loadSprite('main_player_4.png'),
+      await gameRef.loadSprite('main_player_5.png'),
+      await gameRef.loadSprite('main_player_6.png'),
+      await gameRef.loadSprite('main_player_7.png'),
+    ], stepTime: 0.15);
 
     walkLeft = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_left_1.png'),
-      // await gameRef.loadSprite('main_left_2.png'),
-    ], stepTime: 0.2);
+      await gameRef.loadSprite('main_player_left_1.png'),
+      await gameRef.loadSprite('main_player_left_2.png'),
+      await gameRef.loadSprite('main_player_left_3.png'),
+      await gameRef.loadSprite('main_player_left_4.png'),
+      await gameRef.loadSprite('main_player_left_5.png'),
+      await gameRef.loadSprite('main_player_left_6.png'),
+      await gameRef.loadSprite('main_player_left_7.png'),
+    ], stepTime: 0.15);
 
     walkUp = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_up_1.png'),
-      await gameRef.loadSprite('main_up_2.png'),
-    ], stepTime: 0.2);
+      await gameRef.loadSprite('main_player_back_1.png'),
+      await gameRef.loadSprite('main_player_back_2.png'),
+      await gameRef.loadSprite('main_player_back_3.png'),
+      await gameRef.loadSprite('main_player_back_4.png'),
+      await gameRef.loadSprite('main_player_back_5.png'),
+      await gameRef.loadSprite('main_player_back_6.png'),
+    ], stepTime: 0.15);
 
     walkDown = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_bottom_1.png'),
-      await gameRef.loadSprite('main_bottom_2.png'),
-    ], stepTime: 0.2);
+      await gameRef.loadSprite('main_player_front_1.png'),
+      await gameRef.loadSprite('main_player_front_2.png'),
+      await gameRef.loadSprite('main_player_front_3.png'),
+      await gameRef.loadSprite('main_player_front_4.png'),
+      await gameRef.loadSprite('main_player_front_5.png'),
+      await gameRef.loadSprite('main_player_front_6.png'),
+    ], stepTime: 0.15);
 
     // walkUpRight = SpriteAnimation.spriteList([
     //   await gameRef.loadSprite('main_top_right_1.png'),
@@ -145,7 +163,7 @@ class MainPlayer extends SpriteAnimationComponent
     await loadInventory();
     await loadAttacks();
     await loadParty();
-    handleMoving(1);
+    handleMoving(0.00001);
   }
 
   List<Attack> _defaultAttacks() => [

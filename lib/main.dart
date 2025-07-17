@@ -83,6 +83,10 @@ void main() async {
             KeyboardGamepadListener(
               key: keyboardListenerKey,
               onInput: inputHandler,
+              inputMode:
+                  trustFallGame.inMenu
+                      ? GamepadInputMode.menu
+                      : GamepadInputMode.movement,
             ),
           ],
         ),
@@ -107,6 +111,13 @@ class TrustFall extends FlameGame
   final GlobalKey<PauseMenuState> pauseMenuKey;
   final GlobalKey<BattleOverlayState> battleMenuKey;
   final GlobalKey<KeyboardGamepadListenerState> keyboardListenerKey;
+
+  bool get inMenu =>
+      overlays.isActive('StartMenu') ||
+      overlays.isActive('PauseMenu') ||
+      overlays.isActive('SettingsMenu') ||
+      overlays.isActive('BattleOverlay');
+
   TrustFall(
     this.startMenuKey,
     this.settingsMenuKey,
@@ -214,17 +225,23 @@ class TrustFall extends FlameGame
         if ((label == battle || label == 'B' || label == 'Key B') &&
             !inBattle) {
           startBattle(
-            [player, ...currentParty],
+            [
+              player as BattleCharacter,
+              ...(player.currentParty
+                  .where((c) => c.name != player.name)
+                  .toList()),
+            ],
+
             Enemy(
               name: 'Cat',
               level: 2,
               stats: CharacterStats(
                 charClass: CharacterClass.balanced,
                 maxHp: 60,
-                strength: 10,
+                strength: 1,
               ),
               attacks: [
-                Attack(name: 'Punch', type: AttackType.physical, power: 1.0),
+                Attack(name: 'Punch', type: AttackType.physical, power: 0.03),
               ],
             ),
           );

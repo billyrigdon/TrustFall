@@ -1,5 +1,5 @@
 import 'package:flame/components.dart';
-import 'package:flutter/material.dart' show Image, Widget;
+import 'package:flutter/material.dart' show BoxFit, Image, Widget;
 import 'package:game/models/battle_character.dart';
 import 'package:game/models/party_member.dart';
 import 'package:game/models/items.dart';
@@ -34,8 +34,13 @@ class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
     sprite = await gameRef.loadSprite('sprite.png');
   }
 
-  Widget get imageWidget =>
-      Image.asset('assets/images/sprite.png', width: 64, height: 64);
+  Widget get imageWidget => Image.asset(
+    'assets/images/sprite.png',
+    // scale: -10,
+    fit: BoxFit.fitHeight,
+    width: 256,
+    height: 256,
+  );
 
   @override
   bool get isAlive => currentHP > 0;

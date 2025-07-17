@@ -28,55 +28,77 @@ class BattleManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  void attackEnemy(BattleCharacter attacker, Attack attack) {
+  // void attackEnemy(BattleCharacter attacker, Attack attack) {
+  //   if (!playerTurn || battleEnded || !attacker.isAlive) return;
+
+  //   final base = attacker.stats.strength;
+  //   final damage = (base * attack.power).round();
+
+  //   enemy.takeDamage(damage);
+
+  //   if (!enemy.isAlive) {
+  //     battleEnded = true;
+
+  //     for (final member in party) {
+  //       if (member.isAlive) {
+  //         member.gainXpFromEnemy(baseXp: 50, enemyLevel: enemy.level);
+  //       }
+  //     }
+  //   } else {
+  //     playerTurn = false;
+  //     Future.delayed(const Duration(seconds: 1), enemyAttack);
+  //   }
+
+  //   notifyListeners();
+  // }
+
+  Future<void> attackEnemy(
+    BattleCharacter attacker,
+    Attack attack,
+    Future<void> Function(String message, {bool requireConfirmation})
+    showMessage,
+  ) async {
     if (!playerTurn || battleEnded || !attacker.isAlive) return;
 
     final base = attacker.stats.strength;
     final damage = (base * attack.power).round();
 
     enemy.takeDamage(damage);
-
-    if (!enemy.isAlive) {
-      battleEnded = true;
-
-      for (final member in party) {
-        if (member.isAlive) {
-          member.gainXpFromEnemy(baseXp: 50, enemyLevel: enemy.level);
-        }
-      }
-    } else {
-      playerTurn = false;
-      Future.delayed(const Duration(seconds: 1), enemyAttack);
-    }
-
-    notifyListeners();
-  }
-
-  void useItemOn(BattleCharacter target, Item item) {
-    if (!playerTurn || battleEnded || !target.isAlive) return;
-
-    switch (item.type) {
-      case ItemType.food:
-        target.heal(item.value ?? 0); // or read from a field like `item.power`
-        break;
-      default:
-        break;
-    }
-
-    final user = party.firstWhere((c) => c.inventory.contains(item));
-    user.removeItem(item);
+    await showMessage(
+      '${attacker.name} used ${attack.name} and dealt $damage!',
+    );
 
     playerTurn = false;
-    Future.delayed(const Duration(seconds: 1), enemyAttack);
+
+    if (!enemy.isAlive) {
+      for (final member in party) {
+        if (member.isAlive) {
+          final xp = 50.0;
+          member.gainXpFromEnemy(baseXp: xp, enemyLevel: enemy.level);
+          await showMessage(
+            '${member.name} gained $xp XP!',
+            requireConfirmation: true,
+          );
+        }
+      }
+      await showMessage('You won!', requireConfirmation: true);
+      battleEnded = true;
+    } else {
+      // await Future.delayed(const Duration(milliseconds: 200));
+      // await enemyAttack(showMessage);
+    }
+
     notifyListeners();
   }
 
-  void enemyAttack() {
+  Future<void> enemyAttack(
+    Future<void> Function(String message, {bool requireConfirmation})
+    showMessage,
+  ) async {
     final aliveTargets = party.where((c) => c.isAlive).toList();
     if (aliveTargets.isEmpty) {
-      battleEnded = true;
-      restoreAllHP();
-      notifyListeners();
+      await showMessage("Everyone has fainted...", requireConfirmation: true);
+      await _endBattleLoss(showMessage);
       return;
     }
 
@@ -85,13 +107,77 @@ class BattleManager extends ChangeNotifier {
     final damage = (enemy.stats.strength * attack.power).round();
 
     target.takeDamage(damage);
+    await showMessage('${enemy.name} used ${attack.name} and dealt $damage!');
 
     if (party.every((c) => !c.isAlive)) {
-      battleEnded = true;
+      await showMessage('You lost!', requireConfirmation: true);
+      await _endBattleLoss(showMessage);
     } else {
       playerTurn = true;
     }
 
     notifyListeners();
   }
+
+  Future<void> _endBattleLoss(Future<void> Function(String) showMessage) async {
+    battleEnded = true;
+    await restoreAllHP(); // optional, or keep this for debugging
+    notifyListeners(); // trigger rebuild for `battleEnded` check
+  }
+
+  Future<void> useItemOn(
+    BattleCharacter target,
+    Item item,
+    Future<void> Function(String message, {bool requireConfirmation})
+    showMessage,
+  ) async {
+    if (!playerTurn || battleEnded || !target.isAlive) return;
+
+    final user = party.firstWhere((c) => c.inventory.contains(item));
+
+    switch (item.type) {
+      case ItemType.food:
+        target.heal(item.value ?? 0);
+        await showMessage(
+          '${user.name} used ${item.name} and healed ${item.value ?? 0} HP!',
+        );
+        break;
+      default:
+        await showMessage('${user.name} used ${item.name}.');
+        break;
+    }
+
+    user.removeItem(item);
+
+    playerTurn = false;
+
+    // await Future.delayed(const Duration(milliseconds: 250)); // optional delay
+    // await enemyAttack(showMessage);
+
+    notifyListeners();
+  }
+
+  // void enemyAttack() {
+  //   final aliveTargets = party.where((c) => c.isAlive).toList();
+  //   if (aliveTargets.isEmpty) {
+  //     battleEnded = true;
+  //     restoreAllHP();
+  //     notifyListeners();
+  //     return;
+  //   }
+
+  //   final target = aliveTargets[Random().nextInt(aliveTargets.length)];
+  //   final attack = enemy.attacks[Random().nextInt(enemy.attacks.length)];
+  //   final damage = (enemy.stats.strength * attack.power).round();
+
+  //   target.takeDamage(damage);
+
+  //   if (party.every((c) => !c.isAlive)) {
+  //     battleEnded = true;
+  //   } else {
+  //     playerTurn = true;
+  //   }
+
+  //   notifyListeners();
+  // }
 }
