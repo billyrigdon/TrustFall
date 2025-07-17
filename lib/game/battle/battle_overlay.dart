@@ -32,12 +32,9 @@ class BattleOverlayState extends State<BattleOverlay> {
   bool itemMenuOpen = false;
   bool attackMenuOpen = false;
   int attackIndex = 0;
-  // String? battleMessage;
   int turnIndex = 0;
   final SettingsService settings = SettingsService();
   List<String> queuedMessages = [];
-  // bool awaitingInputForMessage = false;
-  bool _modalVisible = false;
 
   String? modalMessage;
   Completer<void>? _modalCompleter;
@@ -90,9 +87,6 @@ class BattleOverlayState extends State<BattleOverlay> {
   }
 
   void handleInput(String inputLabel) {
-    // if (battleManager.currentMessage != null) {
-    // return;
-    // }
     final up = settings.getBinding('MoveUp');
     final down = settings.getBinding('MoveDown');
     final left = settings.getBinding('MoveLeft');
@@ -165,12 +159,6 @@ class BattleOverlayState extends State<BattleOverlay> {
                 currentChar.attacks.length,
       );
     } else if (isAction) {
-      // if (battleManager.waitingForInput ||
-      //     battleManager.currentMessage != null) {
-      //   battleManager.confirmMessage();
-      //   return;
-      // }
-
       _handleSelection();
     }
   }
@@ -180,10 +168,7 @@ class BattleOverlayState extends State<BattleOverlay> {
 
     if (itemMenuOpen) {
       final item = mainInventory[selectedIndex];
-      // battleManager.queueMessage('${currentChar.name} used ${item.name}!');
-      // await showMessage('${currentChar.name} used ${item.name}!');
 
-      // battleManager.useItemOn(currentChar, item);
       await battleManager.useItemOn(currentChar, item, showMessage);
 
       setState(() {
@@ -194,8 +179,6 @@ class BattleOverlayState extends State<BattleOverlay> {
       await _endTurn();
     } else if (attackMenuOpen) {
       final attack = currentChar.attacks[attackIndex];
-      // battleManager.queueMessage('${currentChar.name} used ${attack.name}!');
-      // battleManager.attackEnemy(currentChar, attack);
       await battleManager.attackEnemy(currentChar, attack, showMessage);
 
       setState(() {
@@ -231,18 +214,10 @@ class BattleOverlayState extends State<BattleOverlay> {
           );
           battleManager.battleEnded = true;
 
-          // ❌ Do not call _endTurn()
-          // ❌ Do not let enemy attack
-          // ✅ Instead, trigger end-of-battle UI
           if (mounted)
             widget.game
                 .endBattle(); // optional: delay this if you want confirmation
           return; // ✅ Early return to prevent continuing
-
-        // Future.delayed(const Duration(seconds: 1), () {
-        // if (mounted) widget.game.endBattle();
-        // });
-        // break;
       }
     }
   }
@@ -257,34 +232,8 @@ class BattleOverlayState extends State<BattleOverlay> {
         if (mounted) widget.game.endBattle();
       }
 
-      // await Future.delayed(const Duration(milliseconds: 250));
       await battleManager.enemyAttack(showMessage);
     }
-  }
-
-  Widget _buildPartyStats() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children:
-          battleManager.party.map((member) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${member.name} (Lvl ${member.stats.level})',
-                  style: const TextStyle(color: Colors.white),
-                ),
-                HealthBar(
-                  hp: member.currentHP,
-                  maxHp: member.stats.maxHp.toInt(),
-                  label: 'HP',
-                ),
-
-                const SizedBox(height: 8),
-              ],
-            );
-          }).toList(),
-    );
   }
 
   @override
@@ -344,7 +293,6 @@ class BattleOverlayState extends State<BattleOverlay> {
                     ),
 
                     const SizedBox(height: 12),
-                    // if (modalMessage == null)
                     Container(
                       margin: const EdgeInsets.only(top: 16),
                       padding: const EdgeInsets.all(8),

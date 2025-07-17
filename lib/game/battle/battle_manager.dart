@@ -28,30 +28,6 @@ class BattleManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  // void attackEnemy(BattleCharacter attacker, Attack attack) {
-  //   if (!playerTurn || battleEnded || !attacker.isAlive) return;
-
-  //   final base = attacker.stats.strength;
-  //   final damage = (base * attack.power).round();
-
-  //   enemy.takeDamage(damage);
-
-  //   if (!enemy.isAlive) {
-  //     battleEnded = true;
-
-  //     for (final member in party) {
-  //       if (member.isAlive) {
-  //         member.gainXpFromEnemy(baseXp: 50, enemyLevel: enemy.level);
-  //       }
-  //     }
-  //   } else {
-  //     playerTurn = false;
-  //     Future.delayed(const Duration(seconds: 1), enemyAttack);
-  //   }
-
-  //   notifyListeners();
-  // }
-
   Future<void> attackEnemy(
     BattleCharacter attacker,
     Attack attack,
@@ -83,10 +59,7 @@ class BattleManager extends ChangeNotifier {
       }
       await showMessage('You won!', requireConfirmation: true);
       battleEnded = true;
-    } else {
-      // await Future.delayed(const Duration(milliseconds: 200));
-      // await enemyAttack(showMessage);
-    }
+    } 
 
     notifyListeners();
   }
@@ -151,33 +124,7 @@ class BattleManager extends ChangeNotifier {
 
     playerTurn = false;
 
-    // await Future.delayed(const Duration(milliseconds: 250)); // optional delay
-    // await enemyAttack(showMessage);
-
     notifyListeners();
   }
 
-  // void enemyAttack() {
-  //   final aliveTargets = party.where((c) => c.isAlive).toList();
-  //   if (aliveTargets.isEmpty) {
-  //     battleEnded = true;
-  //     restoreAllHP();
-  //     notifyListeners();
-  //     return;
-  //   }
-
-  //   final target = aliveTargets[Random().nextInt(aliveTargets.length)];
-  //   final attack = enemy.attacks[Random().nextInt(enemy.attacks.length)];
-  //   final damage = (enemy.stats.strength * attack.power).round();
-
-  //   target.takeDamage(damage);
-
-  //   if (party.every((c) => !c.isAlive)) {
-  //     battleEnded = true;
-  //   } else {
-  //     playerTurn = true;
-  //   }
-
-  //   notifyListeners();
-  // }
 }
