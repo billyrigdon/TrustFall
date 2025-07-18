@@ -28,6 +28,7 @@ void main() async {
   final pauseMenuKey = GlobalKey<PauseMenuState>();
   final battleMenuKey = GlobalKey<BattleOverlayState>();
   final keyboardListenerKey = GlobalKey<KeyboardGamepadListenerState>();
+  final GlobalKey<TrustFallTextBoxState> textBoxKey = GlobalKey();
 
   final trustFallGame = TrustFall(
     startMenuKey,
@@ -35,6 +36,7 @@ void main() async {
     pauseMenuKey,
     battleMenuKey,
     keyboardListenerKey,
+    textBoxKey,
   );
 
   final inputHandler = trustFallGame.handleTouchInput;
@@ -49,7 +51,7 @@ void main() async {
             GameWidget(
               game: trustFallGame,
               overlayBuilderMap: {
-                'TextBox': (context, _) => const TrustFallTextBox(),
+                'TextBox': (context, _) => TrustFallTextBox(key: textBoxKey, game: trustFallGame),
                 'PauseMenu':
                     (context, _) => PauseMenu(
                       key: pauseMenuKey,
@@ -111,6 +113,7 @@ class TrustFall extends FlameGame
   final GlobalKey<PauseMenuState> pauseMenuKey;
   final GlobalKey<BattleOverlayState> battleMenuKey;
   final GlobalKey<KeyboardGamepadListenerState> keyboardListenerKey;
+  final GlobalKey<TrustFallTextBoxState> textBoxKey;
 
   bool get inMenu =>
       overlays.isActive('StartMenu') ||
@@ -124,6 +127,7 @@ class TrustFall extends FlameGame
     this.pauseMenuKey,
     this.battleMenuKey,
     this.keyboardListenerKey,
+    this.textBoxKey,
   ) {
     print('TrustFall constructor: $hashCode');
   }
@@ -150,6 +154,9 @@ class TrustFall extends FlameGame
   void endBattle() {
     inBattle = false;
     overlays.remove('BattleOverlay');
+    keyboardListenerKey.currentState?.regainFocus();
+
+    ensureTouchControls();
   }
 
   @override
@@ -205,16 +212,15 @@ class TrustFall extends FlameGame
       if (isPressed) {
         settingsMenuKey.currentState?.handleInput(label);
       }
+    } else if (overlays.isActive('TextBox')) {
+      if (isPressed) {
+        textBoxKey.currentState?.handleInput(label);
+      }
     } else {
       if (isPressed) {
         final back = settings.getBinding('Back');
         final pause = settings.getBinding('Pause');
         final battle = settings.getBinding('Battle');
-        final action = settings.getBinding('Action');
-
-        if (label == action || label == 'Enter') {
-          // showTextBox();
-        }
 
         if (label == back || label == 'Backspace') {}
 
@@ -233,7 +239,7 @@ class TrustFall extends FlameGame
             ],
 
             Enemy(
-              name: 'Cat',
+              name: 'Hmmmmmm',
               level: 2,
               stats: CharacterStats(
                 charClass: CharacterClass.balanced,
@@ -252,6 +258,24 @@ class TrustFall extends FlameGame
     }
   }
 
+  void showDialogue(
+    List<String> lines, {
+    required List<String> choices,
+    required void Function(String choice) onChoiceSelected,
+  }) {
+    overlays.add('TextBox');
+
+    // Delay to ensure overlay is mounted
+    Future.delayed(Duration(milliseconds: 50), () {
+      final textBoxState = textBoxKey.currentState;
+      textBoxState?.startDialogue(
+        lines,
+        choices: choices,
+        onChoiceSelected: onChoiceSelected,
+      );
+    });
+  }
+
   void togglePause() {
     isPaused = !isPaused;
     overlays.remove('TouchControls');
@@ -265,10 +289,14 @@ class TrustFall extends FlameGame
     ensureTouchControls();
   }
 
-  void showTextBox() {
-    overlays.add('TextBox');
-    Future.delayed(const Duration(seconds: 2), () {
-      overlays.remove('TextBox');
-    });
-  }
+  // void showTextBox() {
+  //   overlays.add('TextBox');
+  //   Future.delayed(const Duration(seconds: 2), () {
+  //     overlays.remove('TextBox');
+  //     resumeEngine();
+  //     keyboardListenerKey.currentState?.regainFocus();
+
+  //     ensureTouchControls();
+  //   });
+  // }
 }

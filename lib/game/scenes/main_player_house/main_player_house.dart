@@ -1,11 +1,16 @@
 import 'dart:io';
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/experimental.dart';
 import 'package:flame/game.dart';
 import 'package:flame_tiled/flame_tiled.dart';
+import 'package:game/game/characters/enemies/test_enemy.dart';
 import 'package:game/game/characters/main_player.dart';
 import 'package:game/main.dart';
 import 'package:game/game/scenes/main_player_house/main_player_house_room.dart';
+import 'package:game/models/attacks.dart';
+import 'package:game/models/battle_character.dart';
+import 'package:game/models/character_stats.dart';
 import 'package:game/widgets/door.dart';
 import 'package:game/widgets/wall.dart';
 
@@ -16,6 +21,7 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
   Vector2? doorSpawnCoordinates;
   final Map<String, Vector2> spawnPoints = {};
   String fromOrientation = '';
+  bool _dialogOpen = false;
 
   @override
   Future<void> onLoad() async {
@@ -52,6 +58,64 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
 
         final key = '$fromRoom:$fromOrientation${isSpecial ? ':special' : ''}';
         spawnPoints[key] = Vector2(obj.x, obj.y);
+      }
+    }
+  }
+
+  void _spawnRoomObjects(TiledComponent map) {
+    print('room 1');
+    final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
+
+    for (final obj in objectGroup!.objects) {
+      print(obj.properties.toString());
+      // final isNpc = obj.type == 'npc';
+      final isNpc = obj.properties.any(
+        (p) => p.name == 'type' && p.value == 'npc',
+      );
+      final isEnemy = obj.properties.any(
+        (p) => p.name == 'enemy' && p.value == true,
+      );
+      if (isNpc && isEnemy) {
+        print('found npc');
+        final enemy = Enemy(
+          name: 'Cat',
+          level: 2,
+          stats: CharacterStats(
+            charClass: CharacterClass.balanced,
+            maxHp: 60,
+            strength: 1,
+          ),
+          attacks: [
+            Attack(name: 'Punch', type: AttackType.physical, power: 0.03),
+          ],
+        );
+
+        enemy.position = Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2);
+
+        print(enemy.position);
+        // Add interaction logic
+        enemy.add(RectangleHitbox()); // Optional: for collision
+        enemy.onInteract = () {
+          if (_dialogOpen) return;
+          _dialogOpen = true;
+          gameRef.showDialogue(
+            ['Hi there!', 'Do you want to fight?'],
+            choices: ['Yes', 'No'],
+            onChoiceSelected: (choice) {
+              _dialogOpen = false;
+              if (choice == 'Yes') {
+                gameRef.startBattle([
+                  gameRef.player as BattleCharacter,
+                  ...(gameRef.player.currentParty
+                      .where((c) => c.name != gameRef.player.name)
+                      .toList()),
+                ], enemy);
+              }
+            },
+          );
+        };
+
+        gameRef.world.add(enemy);
       }
     }
   }
@@ -104,7 +168,13 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
       Rectangle.fromLTWH(0, 0, mapPixelSize.x, mapPixelSize.y),
     );
 
+    print('Camera view bounds: ${gameRef.camera.visibleWorldRect}');
+
     if (Platform.isAndroid) gameRef.overlays.add('TouchControls');
+
+    if (room == MainPlayerHouseRoom.room_1) {
+      _spawnRoomObjects(map);
+    }
 
     final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
     if (objectGroup != null) {

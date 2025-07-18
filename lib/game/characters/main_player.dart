@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:game/game/characters/enemies/test_enemy.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/models/equipment.dart';
 import 'package:game/models/party_member.dart';
@@ -163,7 +164,7 @@ class MainPlayer extends SpriteAnimationComponent
     await loadInventory();
     await loadAttacks();
     await loadParty();
-    handleMoving(0.00001);
+    handleMoving(1);
   }
 
   List<Attack> _defaultAttacks() => [
@@ -434,6 +435,15 @@ class MainPlayer extends SpriteAnimationComponent
 
   void handleTouchInput(String label, bool isPressed) {
     if (isPressed) {
+      final action = settings.getBinding('Action');
+
+      if (label == action || label == 'Enter') {
+        print(label);
+        // if (_checkInput(action, ['Enter', 'Space'])) {
+        interact();
+        // }
+      }
+
       _activeInputs.add(label);
     } else {
       _activeInputs.remove(label);
@@ -473,6 +483,20 @@ class MainPlayer extends SpriteAnimationComponent
   void removeFromParty(String name) {
     currentParty.removeWhere((m) => m.name == name);
     saveParty();
+  }
+
+  void interact() {
+    print('interacting');
+    final nearbyEnemy = gameRef.world.children.whereType<Enemy?>().firstWhere(
+      (enemy) => enemy!.toRect().inflate(10).overlaps(toRect()),
+      orElse: () => null,
+    );
+
+    if (nearbyEnemy != null) {
+      nearbyEnemy.onInteract?.call();
+    } else {
+      print('No nearby enemy found');
+    }
   }
 
   @override

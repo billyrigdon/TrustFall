@@ -109,7 +109,7 @@ class BattleOverlayState extends State<BattleOverlay> {
         setState(() => modalMessage = null);
         _modalCompleter!.complete();
       }
-      return; // don't pass other inputs to menus
+      return;
     }
 
     if (isBack) {
