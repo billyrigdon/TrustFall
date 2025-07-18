@@ -10,95 +10,6 @@ class TrustFallTextBox extends StatefulWidget {
   TrustFallTextBoxState createState() => TrustFallTextBoxState();
 }
 
-// class TrustFallTextBoxState extends State<TrustFallTextBox> {
-//   List<String> lines = [];
-//   List<String> choices = [];
-//   void Function(String choice)? onChoiceSelected;
-
-//   int currentLine = 0;
-
-//   void startDialogue(
-//     List<String> newLines, {
-//     required List<String> choices,
-//     required void Function(String choice) onChoiceSelected,
-//   }) {
-//     setState(() {
-//       lines = newLines;
-//       this.choices = choices;
-//       this.onChoiceSelected = onChoiceSelected;
-//       currentLine = 0;
-//     });
-//   }
-
-//   void _next() {
-//     if (currentLine < lines.length - 1) {
-//       setState(() => currentLine++);
-//     } else if (choices.isEmpty) {
-//       _close();
-//     }
-//   }
-
-//   void _close() {
-//     setState(() {
-//       lines = [];
-//       choices = [];
-//       onChoiceSelected = null;
-//     });
-//     if (mounted) {
-//       Navigator.of(context).maybePop();
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     if (lines.isEmpty) return const SizedBox.shrink();
-
-//     return Align(
-//       alignment: Alignment.bottomCenter,
-//       child: FractionallySizedBox(
-//         widthFactor: 0.9,
-//         child: Container(
-//           padding: const EdgeInsets.all(16),
-//           decoration: BoxDecoration(
-//             color: Colors.black.withOpacity(0.85),
-//             borderRadius: BorderRadius.circular(12),
-//             border: Border.all(color: Colors.white),
-//           ),
-//           child: Column(
-//             mainAxisSize: MainAxisSize.min,
-//             children: [
-//               Text(
-//                 lines[currentLine],
-//                 style: const TextStyle(color: Colors.white, fontSize: 16),
-//                 textAlign: TextAlign.center,
-//               ),
-//               const SizedBox(height: 12),
-//               if (choices.isNotEmpty && currentLine == lines.length - 1)
-//                 ...choices.map(
-//                   (choice) => ElevatedButton(
-//                     onPressed: () {
-//                       onChoiceSelected?.call(choice);
-//                       _close();
-//                     },
-//                     child: Text(choice),
-//                   ),
-//                 ),
-//               if (choices.isEmpty || currentLine < lines.length - 1)
-//                 TextButton(
-//                   onPressed: _next,
-//                   child: const Text(
-//                     'Next',
-//                     style: TextStyle(color: Colors.white70),
-//                   ),
-//                 ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 class TrustFallTextBoxState extends State<TrustFallTextBox> {
   List<String> lines = [];
   List<String> choices = [];
@@ -184,7 +95,7 @@ class TrustFallTextBoxState extends State<TrustFallTextBox> {
     return Align(
       alignment: Alignment.bottomCenter,
       child: FractionallySizedBox(
-        widthFactor: 0.9,
+        widthFactor: 0.6,
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(

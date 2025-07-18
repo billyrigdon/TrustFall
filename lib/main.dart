@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
@@ -51,7 +52,9 @@ void main() async {
             GameWidget(
               game: trustFallGame,
               overlayBuilderMap: {
-                'TextBox': (context, _) => TrustFallTextBox(key: textBoxKey, game: trustFallGame),
+                'TextBox':
+                    (context, _) =>
+                        TrustFallTextBox(key: textBoxKey, game: trustFallGame),
                 'PauseMenu':
                     (context, _) => PauseMenu(
                       key: pauseMenuKey,
@@ -114,6 +117,7 @@ class TrustFall extends FlameGame
   final GlobalKey<BattleOverlayState> battleMenuKey;
   final GlobalKey<KeyboardGamepadListenerState> keyboardListenerKey;
   final GlobalKey<TrustFallTextBoxState> textBoxKey;
+  Vector2 mapPixelSize = Vector2.zero();
 
   bool get inMenu =>
       overlays.isActive('StartMenu') ||
@@ -159,13 +163,29 @@ class TrustFall extends FlameGame
     ensureTouchControls();
   }
 
+  // void updateZoomToFitMap() {
+  //   final viewportSize = size;
+  //   final mapSize = mapPixelSize;
+
+  //   final scaleX = viewportSize.x / mapSize.x;
+  //   final scaleY = viewportSize.y / mapSize.y;
+
+  //   // Choose the smaller scale so it fully fits
+  //   final scale = scaleX < scaleY ? scaleX : scaleY;
+
+  //   camera.viewfinder.zoom = scale;
+  // }
+
   @override
   Future<void> onLoad() async {
     player = MainPlayer();
     final prefs = await SharedPreferences.getInstance();
     // prefs.clear();
     final loader = prefs.getString('currentLoader') ?? 'mainPlayerHouse';
-
+    // var settings = SettingsService();
+    // await settings.load();
+    // final res = settings.resolutionToVector(settings.resolution);
+    // camera.viewport = FixedResolutionViewport(resolution: res);
     switch (loader) {
       case 'mainPlayerHouse':
       default:

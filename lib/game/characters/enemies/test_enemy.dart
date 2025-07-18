@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart' show BoxFit, Image, VoidCallback, Widget;
 import 'package:game/models/battle_character.dart';
@@ -40,8 +42,8 @@ class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
     'assets/images/sprite.png',
     // scale: -10,
     fit: BoxFit.fitHeight,
-    width: 256,
-    height: 256,
+    width: Platform.isAndroid ? 64 : 256,
+    height: Platform.isAndroid ? 64 : 256,
   );
 
   @override

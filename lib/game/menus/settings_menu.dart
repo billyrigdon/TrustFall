@@ -1,10 +1,35 @@
 import 'dart:io';
 
+import 'package:flame/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game/main.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:game/widgets/keybinding_row.dart';
+
+enum SettingsItemType { keyBind, switchToggle, dropdown, slider, back }
+
+late final List<_SettingsItemMeta> _itemMetas = [
+  _SettingsItemMeta(SettingsItemType.keyBind),
+  _SettingsItemMeta(SettingsItemType.keyBind),
+  _SettingsItemMeta(SettingsItemType.keyBind),
+  _SettingsItemMeta(SettingsItemType.keyBind),
+  _SettingsItemMeta(SettingsItemType.keyBind),
+  _SettingsItemMeta(SettingsItemType.keyBind),
+  _SettingsItemMeta(SettingsItemType.keyBind),
+  if (Platform.isAndroid) _SettingsItemMeta(SettingsItemType.switchToggle),
+  _SettingsItemMeta(SettingsItemType.dropdown),
+  _SettingsItemMeta(SettingsItemType.dropdown),
+  _SettingsItemMeta(SettingsItemType.slider),
+  _SettingsItemMeta(SettingsItemType.slider),
+  _SettingsItemMeta(SettingsItemType.back),
+];
+
+class _SettingsItemMeta {
+  final SettingsItemType type;
+
+  _SettingsItemMeta(this.type);
+}
 
 class SettingsMenu extends StatefulWidget {
   final TrustFall game;
@@ -61,6 +86,7 @@ class SettingsMenuState extends State<SettingsMenu> {
           keyBindings[action] = settings.getBinding(action);
         }
         useDpad = settings.getUseDpad();
+        resolution = settings.resolution;
         isReady = true;
       });
     });
@@ -75,53 +101,166 @@ class SettingsMenuState extends State<SettingsMenu> {
   void handleInput(String inputLabel) {
     if (!isReady) return;
 
+    // if (_keyRowKeys.any((k) => k.currentState?.listening == true)) return;
+
+    final anyListening = _keyRowKeys.any(
+      (k) => k.currentState?.listening == true,
+    );
+    if (anyListening) return;
+
     final up = service.getBinding('MoveUp');
     final down = service.getBinding('MoveDown');
+    final left = service.getBinding('MoveLeft');
+    final right = service.getBinding('MoveRight');
     final action = service.getBinding('Action');
     final back = service.getBinding('Back');
 
     final isUp = inputLabel == up || inputLabel == 'Arrow Up';
     final isDown = inputLabel == down || inputLabel == 'Arrow Down';
+    final isLeft = inputLabel == left || inputLabel == 'Arrow Left';
+    final isRight = inputLabel == right || inputLabel == 'Arrow Right';
     final isAction =
-        inputLabel == action ||
-        inputLabel == 'Enter' ||
-        inputLabel == LogicalKeyboardKey.enter.keyLabel ||
-        inputLabel == 'A';
-
+        inputLabel == action || inputLabel == 'Enter' || inputLabel == 'A';
     final isBack = inputLabel == back || inputLabel == 'Backspace';
 
-    if (isDown) {
-      if (mounted) {
-        setState(() => selectedIndex = (selectedIndex + 1) % _totalItems);
+    final type = _itemMetas[selectedIndex].type;
+
+    if (type == SettingsItemType.keyBind && isAction) {
+      final key = _keyRowKeys[selectedIndex];
+      if (!(key.currentState?.listening ?? false)) {
+        _triggerSelectedItem();
+        return;
       }
+      return;
+    }
+
+    if (isDown || isUp) {
+      final direction = isDown ? 1 : -1;
+      setState(() {
+        selectedIndex = (selectedIndex + direction + _totalItems) % _totalItems;
+      });
       _scrollToSelectedItem();
-    } else if (isUp) {
-      if (mounted) {
-        setState(
-          () => selectedIndex = (selectedIndex - 1 + _totalItems) % _totalItems,
-        );
-      }
-      _scrollToSelectedItem();
-    } else if (isAction) {
-      var isListening = false;
-      if (selectedIndex < _keyRowKeys.length) {
-        final key = _keyRowKeys[selectedIndex];
-        if (key.currentState?.listening ?? false) {
-          isListening = true;
+      return;
+    }
+
+    if (type == SettingsItemType.switchToggle && isAction) {
+      setState(() {
+        useDpad = !useDpad;
+        service.useDpad = useDpad;
+      });
+      return;
+    }
+
+    if (type == SettingsItemType.dropdown && (isLeft || isRight)) {
+      setState(() {
+        final dropdownIndex =
+            _itemMetas
+                .sublist(0, selectedIndex + 1)
+                .where((m) => m.type == SettingsItemType.dropdown)
+                .length -
+            1;
+
+        final options =
+            dropdownIndex == 0 ? difficultyOptions : resolutionOptions;
+        final current = dropdownIndex == 0 ? difficulty : resolution;
+        final currentIndex = options.indexOf(current);
+        final nextIndex =
+            (currentIndex + (isRight ? 1 : -1) + options.length) %
+            options.length;
+
+        if (dropdownIndex == 0) {
+          difficulty = options[nextIndex];
+          service.difficulty = difficulty;
+        } else {
+          resolution = options[nextIndex];
+          settings.setResolution(resolution).then((_) {
+            widget.game.camera.viewport = FixedResolutionViewport(
+              resolution: settings.resolutionToVector(resolution),
+            );
+          });
+          // service.resolution = resolution;
         }
-      }
-      if (mounted && !isListening) _triggerSelectedItem();
-    } else if (isBack) {
-      var isListening = false;
-      if (selectedIndex < _keyRowKeys.length) {
-        final key = _keyRowKeys[selectedIndex];
-        if (key.currentState?.listening ?? false) {
-          isListening = true;
+      });
+      return;
+    }
+
+    if (type == SettingsItemType.slider && (isLeft || isRight)) {
+      setState(() {
+        final amount = isRight ? 0.05 : -0.05;
+        final sliderIndex =
+            _itemMetas
+                .sublist(0, selectedIndex + 1)
+                .where((m) => m.type == SettingsItemType.slider)
+                .length -
+            1;
+
+        if (sliderIndex == 0) {
+          volume = (volume + amount).clamp(0.0, 1.0);
+          service.volume = volume;
+        } else {
+          fontSize = (fontSize + amount).clamp(12.0, 32.0);
+          service.fontSize = fontSize;
         }
-      }
-      if (mounted && !isListening) widget.game.returnToStartMenu();
+      });
+      return;
+    }
+
+    if ((type == SettingsItemType.back && isAction) || isBack) {
+      widget.game.returnToStartMenu();
+      return;
     }
   }
+
+  // void handleInput(String inputLabel) {
+  //   if (!isReady) return;
+
+  //   final up = service.getBinding('MoveUp');
+  //   final down = service.getBinding('MoveDown');
+  //   final action = service.getBinding('Action');
+  //   final back = service.getBinding('Back');
+
+  //   final isUp = inputLabel == up || inputLabel == 'Arrow Up';
+  //   final isDown = inputLabel == down || inputLabel == 'Arrow Down';
+  //   final isAction =
+  //       inputLabel == action ||
+  //       inputLabel == 'Enter' ||
+  //       inputLabel == LogicalKeyboardKey.enter.keyLabel ||
+  //       inputLabel == 'A';
+
+  //   final isBack = inputLabel == back || inputLabel == 'Backspace';
+
+  //   if (isDown) {
+  //     if (mounted) {
+  //       setState(() => selectedIndex = (selectedIndex + 1) % _totalItems);
+  //     }
+  //     _scrollToSelectedItem();
+  //   } else if (isUp) {
+  //     if (mounted) {
+  //       setState(
+  //         () => selectedIndex = (selectedIndex - 1 + _totalItems) % _totalItems,
+  //       );
+  //     }
+  //     _scrollToSelectedItem();
+  //   } else if (isAction) {
+  //     var isListening = false;
+  //     if (selectedIndex < _keyRowKeys.length) {
+  //       final key = _keyRowKeys[selectedIndex];
+  //       if (key.currentState?.listening ?? false) {
+  //         isListening = true;
+  //       }
+  //     }
+  //     if (mounted && !isListening) _triggerSelectedItem();
+  //   } else if (isBack) {
+  //     var isListening = false;
+  //     if (selectedIndex < _keyRowKeys.length) {
+  //       final key = _keyRowKeys[selectedIndex];
+  //       if (key.currentState?.listening ?? false) {
+  //         isListening = true;
+  //       }
+  //     }
+  //     if (mounted && !isListening) widget.game.returnToStartMenu();
+  //   }
+  // }
 
   void _scrollToSelectedItem() {
     // Adjust item height if needed
@@ -181,15 +320,56 @@ class SettingsMenuState extends State<SettingsMenu> {
     );
   }
 
+  Widget carouselSetting({
+    required String label,
+    required String value,
+    required List<String> options,
+    required void Function(String) onChanged,
+  }) {
+    final currentIndex = options.indexOf(value);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white)),
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_left, color: Colors.amber),
+              onPressed: () {
+                final prevIndex =
+                    (currentIndex - 1 + options.length) % options.length;
+                onChanged(options[prevIndex]);
+              },
+            ),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_right, color: Colors.amber),
+              onPressed: () {
+                final nextIndex = (currentIndex + 1) % options.length;
+                onChanged(options[nextIndex]);
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   final List<GlobalKey<KeyBindingRowState>> _keyRowKeys = [
-    GlobalKey(), // Back
-    GlobalKey(), // Pause
-    GlobalKey(), // Battle
-    GlobalKey(), // MoveUp
-    GlobalKey(), // MoveDown
-    GlobalKey(), // MoveLeft
-    GlobalKey(), // MoveRight
-    GlobalKey(), // Action
+    GlobalKey(),
+    GlobalKey(),
+    GlobalKey(),
+    GlobalKey(),
+    GlobalKey(),
+    GlobalKey(),
+    GlobalKey(),
   ];
 
   Widget _buildKeyRow(
@@ -279,6 +459,7 @@ class SettingsMenuState extends State<SettingsMenu> {
   Widget _buildBackButton() {
     return ElevatedButton(
       onPressed: () {
+        print('pressed');
         widget.game.returnToStartMenu();
       },
       child: const Text('Back'),
@@ -301,7 +482,6 @@ class SettingsMenuState extends State<SettingsMenu> {
         break;
       case 9:
       case 10:
-        // Dropdowns - possibly open later
         break;
       case 11:
         break;
@@ -337,27 +517,36 @@ class SettingsMenuState extends State<SettingsMenu> {
     }
 
     final settingsItems = <Widget>[
-      _buildKeyRow('Back', 'Back', _keyRowKeys[0]),
-      _buildKeyRow('Pause', 'Pause', _keyRowKeys[1]),
-      _buildKeyRow('Start Battle', 'Battle', _keyRowKeys[2]),
-      _buildKeyRow('Move Up', 'MoveUp', _keyRowKeys[3]),
-      _buildKeyRow('Move Down', 'MoveDown', _keyRowKeys[4]),
-      _buildKeyRow('Move Left', 'MoveLeft', _keyRowKeys[5]),
-      _buildKeyRow('Move Right', 'MoveRight', _keyRowKeys[6]),
-      _buildKeyRow('Action Button', 'Action', _keyRowKeys[7]),
+      // _buildK+eyRow('Start Battle', 'Battle', _keyRowKeys[2]),
+      _buildKeyRow('Move Up', 'MoveUp', _keyRowKeys[0]),
+      _buildKeyRow('Move Down', 'MoveDown', _keyRowKeys[1]),
+      _buildKeyRow('Move Left', 'MoveLeft', _keyRowKeys[2]),
+      _buildKeyRow('Move Right', 'MoveRight', _keyRowKeys[3]),
+      _buildKeyRow('Action Button', 'Action', _keyRowKeys[4]),
+      _buildKeyRow('Back', 'Back', _keyRowKeys[5]),
+      _buildKeyRow('Pause', 'Pause', _keyRowKeys[6]),
       if (Platform.isAndroid) _buildSwitchRow('Use D-pad'),
-      _buildDropdownRow(
-        'Difficulty',
-        difficultyOptions,
-        difficulty,
-        (v) => setState(() => difficulty = v!),
+      carouselSetting(
+        label: 'Difficulty',
+        value: difficulty,
+        options: difficultyOptions,
+        onChanged: (v) => setState(() => difficulty = v),
       ),
-      _buildDropdownRow(
-        'Resolution',
-        resolutionOptions,
-        resolution,
-        (v) => setState(() => resolution = v!),
+
+      carouselSetting(
+        label: 'Resolution',
+        options: resolutionOptions,
+        value: resolution,
+        onChanged: (v) async {
+          print(v);
+          await settings.setResolution(v);
+          widget.game.camera.viewport = FixedResolutionViewport(
+            resolution: settings.resolutionToVector(v),
+          );
+          setState(() => resolution = v);
+        },
       ),
+
       _buildSliderRow('Volume', volume, (v) => setState(() => volume = v)),
       _buildSliderRow(
         'Font Size',

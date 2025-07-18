@@ -98,6 +98,16 @@ class KeyboardGamepadListenerState extends State<KeyboardGamepadListener> {
     super.dispose();
   }
 
+  // void _onKey(RawKeyEvent event) {
+  //   final key = event.logicalKey;
+  //   final label = key.keyLabel.isEmpty ? key.debugName ?? '' : key.keyLabel;
+
+  //   if (label.isEmpty) return;
+
+  //   final isPressed = event is RawKeyDownEvent;
+  //   widget.onInput(label, isPressed);
+  // }
+
   void _onKey(RawKeyEvent event) {
     final key = event.logicalKey;
     final label = key.keyLabel.isEmpty ? key.debugName ?? '' : key.keyLabel;
@@ -105,7 +115,21 @@ class KeyboardGamepadListenerState extends State<KeyboardGamepadListener> {
     if (label.isEmpty) return;
 
     final isPressed = event is RawKeyDownEvent;
-    widget.onInput(label, isPressed);
+
+    if (isPressed) {
+      final wasHeld = _currentlyHeldInputs.contains(label);
+      _currentlyHeldInputs.add(label);
+      _inputHoldStart[label] ??= DateTime.now();
+      if (!wasHeld) {
+        _firedOnce.remove(label);
+      }
+    } else {
+      _currentlyHeldInputs.remove(label);
+      _inputHoldStart.remove(label);
+      _lastRepeat.remove(label);
+      _firedOnce.remove(label);
+      widget.onInput(label, false);
+    }
   }
 
   void _onGamepad(GamepadEvent event) {

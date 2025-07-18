@@ -1,3 +1,4 @@
+import 'package:flame/components.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsService {
@@ -11,8 +12,8 @@ class SettingsService {
   static const _controllerSchemeKey = 'controllerScheme';
   static const _bindingPrefix = 'bind_';
   static const _useDpadKey = 'useDpad';
-  
-  
+  static const _resolutionKey = 'resolution';
+
   bool useDpad = false;
 
   late SharedPreferences _prefs;
@@ -22,6 +23,8 @@ class SettingsService {
   double fontSize = 16.0;
   String difficulty = 'Normal';
   String controllerScheme = 'WASD';
+  String resolution = '1280x720';
+
   final Map<String, String> _bindings = {};
 
   final List<String> allActions = [
@@ -44,6 +47,7 @@ class SettingsService {
     difficulty = _prefs.getString(_difficultyKey) ?? 'Normal';
     controllerScheme = _prefs.getString(_controllerSchemeKey) ?? 'WASD';
     useDpad = _prefs.getBool(_useDpadKey) ?? false;
+    resolution = _prefs.getString(_resolutionKey) ?? '1280x720';
 
     _bindings.clear();
     for (var action in allActions) {
@@ -65,13 +69,27 @@ class SettingsService {
     await _prefs.setString(_difficultyKey, difficulty);
     await _prefs.setString(_controllerSchemeKey, controllerScheme);
     await _prefs.setBool(_useDpadKey, useDpad);
+    await _prefs.setString(_resolutionKey, resolution);
 
     for (var entry in _bindings.entries) {
       await _prefs.setString('$_bindingPrefix${entry.key}', entry.value);
     }
   }
 
-Future<void> setUseDpad(bool value) async {
+  Vector2 resolutionToVector(String resolution) {
+    final parts = resolution.split('x');
+    final width = int.tryParse(parts[0]) ?? 1280;
+    final height = int.tryParse(parts[1]) ?? 720;
+    return Vector2(width.toDouble(), height.toDouble());
+  }
+
+  Future<void> setResolution(String value) async {
+    resolution = value;
+    print(value);
+    await _prefs.setString(_resolutionKey, value);
+  }
+
+  Future<void> setUseDpad(bool value) async {
     useDpad = value;
     await _prefs.setBool(_useDpadKey, value);
   }

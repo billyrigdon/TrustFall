@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flame/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game/models/battle_character.dart';
@@ -318,6 +319,91 @@ class PauseMenuState extends State<PauseMenu> {
     );
   }
 
+  // void applyZoomToFitMap() {
+  //     final screenSize = widget.player.game.size;
+  //     final zoomX = screenSize.x / mapPixelSize.x;
+  //     final zoomY = screenSize.y / mapPixelSize.y;
+  //     final zoom = zoomX < zoomY ? zoomX : zoomY;
+  //     widget.player.game.camera.viewfinder.zoom = zoom;
+
+  //   }
+
+  Widget _buildSettingsTab() {
+    final resolutionOptions = [
+      '640x360',
+      '800x600',
+      '1024x768',
+      '1280x720',
+      '1920x1080',
+    ];
+    String current = settings.resolution;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Settings',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Resolution', style: TextStyle(color: Colors.white)),
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_left, color: Colors.amber),
+                  onPressed: () async {
+                    final index = resolutionOptions.indexOf(current);
+                    final prev =
+                        (index - 1 + resolutionOptions.length) %
+                        resolutionOptions.length;
+                    final newRes = resolutionOptions[prev];
+                    await settings.setResolution(newRes);
+                    setState(() => current = newRes);
+
+                    // Apply resolution live
+                    widget
+                        .player
+                        .gameRef
+                        .camera
+                        .viewport = FixedResolutionViewport(
+                      resolution: settings.resolutionToVector(newRes),
+                    );
+                  },
+                ),
+                Text(current, style: const TextStyle(color: Colors.amber)),
+                IconButton(
+                  icon: const Icon(Icons.arrow_right, color: Colors.amber),
+                  onPressed: () async {
+                    final index = resolutionOptions.indexOf(current);
+                    final next = (index + 1) % resolutionOptions.length;
+                    final newRes = resolutionOptions[next];
+                    await settings.setResolution(newRes);
+                    setState(() => current = newRes);
+
+                    widget
+                        .player
+                        .gameRef
+                        .camera
+                        .viewport = FixedResolutionViewport(
+                      resolution: settings.resolutionToVector(newRes),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildContent() {
     switch (selectedTab) {
       case 0:
@@ -326,6 +412,8 @@ class PauseMenuState extends State<PauseMenu> {
         return _buildEquipment();
       case 2:
         return _buildPartyStats();
+      // case 3:
+      // return _buildSettingsTab();
       default:
         return const SizedBox.shrink();
     }
@@ -375,7 +463,8 @@ class PauseMenuState extends State<PauseMenu> {
               }),
             ),
             const SizedBox(height: 16),
-            Expanded(child: SingleChildScrollView(child: _buildContent())),
+            // Expanded(child: SingleChildScrollView(child: _buildContent())),
+            Expanded(child: _buildContent()),
             const SizedBox(height: 24),
           ],
         ),

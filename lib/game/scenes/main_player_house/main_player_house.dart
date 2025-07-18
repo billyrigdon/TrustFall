@@ -63,12 +63,9 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
   }
 
   void _spawnRoomObjects(TiledComponent map) {
-    print('room 1');
     final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
 
     for (final obj in objectGroup!.objects) {
-      print(obj.properties.toString());
-      // final isNpc = obj.type == 'npc';
       final isNpc = obj.properties.any(
         (p) => p.name == 'type' && p.value == 'npc',
       );
@@ -76,7 +73,6 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
         (p) => p.name == 'enemy' && p.value == true,
       );
       if (isNpc && isEnemy) {
-        print('found npc');
         final enemy = Enemy(
           name: 'Cat',
           level: 2,
@@ -92,9 +88,7 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
 
         enemy.position = Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2);
 
-        print(enemy.position);
-        // Add interaction logic
-        enemy.add(RectangleHitbox()); // Optional: for collision
+        enemy.add(RectangleHitbox());
         enemy.onInteract = () {
           if (_dialogOpen) return;
           _dialogOpen = true;
@@ -151,24 +145,35 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     final lastDirection = gameRef.player.lastDirection;
     final map = await TiledComponent.load(room.tmxFile, Vector2.all(32));
     fromOrientation = orientation ?? 'horizontal';
-    mapPixelSize = map.size;
+    gameRef.mapPixelSize = mapPixelSize = map.size;
     final world = World();
     gameRef.world = world;
     gameRef.add(world);
     world.add(map);
+
+    // final viewportSize = gameRef.size; // This is your virtual resolution now!
+    // final mapSize = mapPixelSize; // in pixels (like 640x480, 1280x720, etc.)
+
+    // final scaleX = viewportSize.x / mapSize.x;
+    // final scaleY = viewportSize.y / mapSize.y;
+
+    // Choose the smaller scale so it fully fits
+    // final scale = scaleX < scaleY ? scaleX : scaleY;
+
+    // gameRef.camera.viewfinder.zoom = scale;
 
     final screenSize = gameRef.size;
     final zoomX = screenSize.x / mapPixelSize.x;
     final zoomY = screenSize.y / mapPixelSize.y;
     final zoom = zoomX < zoomY ? zoomX : zoomY;
 
+    // gameRef.camera.viewfinder.position = mapPixelSize / 2;
+
     gameRef.camera.viewfinder.zoom = zoom;
     gameRef.camera.viewfinder.position = mapPixelSize / 2;
     gameRef.camera.setBounds(
       Rectangle.fromLTWH(0, 0, mapPixelSize.x, mapPixelSize.y),
     );
-
-    print('Camera view bounds: ${gameRef.camera.visibleWorldRect}');
 
     if (Platform.isAndroid) gameRef.overlays.add('TouchControls');
 

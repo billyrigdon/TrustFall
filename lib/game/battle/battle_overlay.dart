@@ -402,7 +402,7 @@ class BattleOverlayState extends State<BattleOverlay> {
       children: List.generate(commands.length, (i) {
         final selected = i == selectedIndex;
         return SizedBox(
-          width: 72,
+          width: 75,
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(color: selected ? Colors.amber : Colors.white),
