@@ -34,8 +34,10 @@ class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
     required this.stats,
     required this.attacks,
     required this.spriteAsset,
+    required this.bank,
     // required this.onInteract,
   }) : currentHP = stats.maxHp.toInt(),
+       currentMP = stats.maxMP.toInt(),
        super(size: Vector2(30, 60), anchor: Anchor.topLeft);
 
   @override
@@ -138,6 +140,29 @@ class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
   @override
   Future<void> saveParty() {
     // TODO: implement saveParty
+    throw UnimplementedError();
+  }
+
+  @override
+  int currentMP;
+
+  @override
+  List<Attack> bank;
+
+  @override
+  void learnBankMove(Attack attack) {
+    // TODO: implement learnBankMove
+  }
+
+  @override
+  Future<void> loadBank() {
+    // TODO: implement loadBank
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> saveBank() {
+    // TODO: implement saveBank
     throw UnimplementedError();
   }
 }

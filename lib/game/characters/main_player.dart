@@ -27,6 +27,9 @@ class MainPlayer extends SpriteAnimationComponent
   late List<Attack> attacks;
 
   @override
+  late List<Attack> bank;
+
+  @override
   late CharacterStats stats;
 
   @override
@@ -65,6 +68,16 @@ class MainPlayer extends SpriteAnimationComponent
   Future<void> _saveHPToPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('$name-hp', currentHP);
+  }
+
+  Future<void> _loadMPFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    currentMP = prefs.getInt('$name-mp') ?? stats.maxMP.toInt();
+  }
+
+  Future<void> _saveMPToPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('$name-mp', currentMP);
   }
 
   @override
@@ -161,15 +174,22 @@ class MainPlayer extends SpriteAnimationComponent
     stats = await CharacterStats.load(name, CharacterClass.balanced);
 
     await _loadHPFromPrefs();
+    await _loadMPFromPrefs();
     await loadInventory();
     await loadAttacks();
+    await loadBank();
     await loadParty();
     handleMoving(1);
   }
 
   List<Attack> _defaultAttacks() => [
     Attack(name: 'Kick', type: AttackType.physical, power: 1.0),
-    Attack(name: 'Charm', type: AttackType.mental, power: 1.2),
+    Attack(name: 'Charm', type: AttackType.physical, power: 1.2),
+  ];
+
+  List<Attack> _defaultBank() => [
+    Attack(name: 'Insult', type: AttackType.mental, cost: 20, power: 1.0),
+    Attack(name: 'Manipulate', type: AttackType.mental, cost: 40, power: 10),
   ];
 
   @override
@@ -192,6 +212,25 @@ class MainPlayer extends SpriteAnimationComponent
   }
 
   @override
+  Future<void> loadBank() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('$name-bank-moves');
+
+    if (raw == null || raw.isEmpty) {
+      bank = _defaultBank();
+      await saveBank();
+    } else {
+      bank =
+          raw
+              .map(
+                (str) =>
+                    Attack.fromJson(Map<String, dynamic>.from(jsonDecode(str))),
+              )
+              .toList();
+    }
+  }
+
+  @override
   Future<void> saveAttacks() async {
     final prefs = await SharedPreferences.getInstance();
     final list = attacks.map((a) => jsonEncode(a.toJson())).toList();
@@ -199,10 +238,25 @@ class MainPlayer extends SpriteAnimationComponent
   }
 
   @override
+  Future<void> saveBank() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = bank.map((a) => jsonEncode(a.toJson())).toList();
+    await prefs.setStringList('$name-bank-moves', list);
+  }
+
+  @override
   void learnAttack(Attack attack) {
     if (!attacks.any((a) => a.name == attack.name)) {
       attacks.add(attack);
       saveAttacks();
+    }
+  }
+
+  @override
+  void learnBankMove(Attack attack) {
+    if (!bank.any((a) => a.name == attack.name)) {
+      bank.add(attack);
+      saveBank();
     }
   }
 
@@ -616,4 +670,7 @@ class MainPlayer extends SpriteAnimationComponent
 
   @override
   Sprite? sprite;
+
+  @override
+  int currentMP = 0;
 }

@@ -14,8 +14,12 @@ abstract class BattleCharacter extends SpriteComponent {
   int get currentHP => _currentHP;
   set currentHP(int hp) => _currentHP = hp;
   int _currentHP = 0;
+  int get currentMP => _currentMP;
+  set currentMP(int mp) => _currentMP = mp;
+  int _currentMP = 0;
   List<Item> inventory = [];
   List<Attack> attacks = [];
+  List<Attack> bank = [];
 
   List<PartyMember> currentParty = [];
 
@@ -100,6 +104,24 @@ abstract class BattleCharacter extends SpriteComponent {
     }
   }
 
+  Future<void> loadBank() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('$name-bank-moves');
+
+    if (saved == null || saved.isEmpty) {
+      attacks = _defaultBank();
+      await saveBank(); // ensure it's stored
+    } else {
+      attacks =
+          saved
+              .map(
+                (str) =>
+                    Attack.fromJson(Map<String, dynamic>.from(jsonDecode(str))),
+              )
+              .toList();
+    }
+  }
+
   Future<void> saveAttacks() async {
     final prefs = await SharedPreferences.getInstance();
     final list = attacks.map((a) => jsonEncode(a.toJson())).toList();
@@ -113,7 +135,23 @@ abstract class BattleCharacter extends SpriteComponent {
     }
   }
 
+Future<void> saveBank() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = attacks.map((a) => jsonEncode(a.toJson())).toList();
+    await prefs.setStringList('$name-bank-moves', list);
+  }
+
+  void learnBankMove(Attack attack) {
+    if (!bank.any((a) => a.name == attack.name)) {
+      bank.add(attack);
+      saveBank();
+    }
+  }
+
+
   List<Attack> _defaultAttacks(); // Must be implemented by subclasses
+
+  List<Attack> _defaultBank(); 
 
   bool get isAlive => _currentHP > 0;
 }

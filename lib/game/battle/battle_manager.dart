@@ -62,6 +62,42 @@ class BattleManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> mentallyAttackEnemy(
+    BattleCharacter attacker,
+    Attack attack,
+    Future<void> Function(String message, {bool requireConfirmation})
+    showMessage,
+  ) async {
+    if (!playerTurn || battleEnded || !attacker.isAlive) return;
+
+    final base = attacker.stats.intelligence;
+    final damage = (base * attack.power).round();
+
+    attacker.currentMP -= attack.cost!;
+
+    enemy.takeDamage(damage);
+    await showMessage(
+      '${attacker.name} used ${attack.name} and dealt $damage!',
+    );
+
+    if (!enemy.isAlive) {
+      for (final member in party) {
+        if (member.isAlive) {
+          final xp = 50.0;
+          member.gainXpFromEnemy(baseXp: xp, enemyLevel: enemy.level);
+          await showMessage(
+            '${member.name} gained $xp XP!',
+            requireConfirmation: true,
+          );
+        }
+      }
+      await showMessage('You won!', requireConfirmation: true);
+      battleEnded = true;
+    }
+
+    notifyListeners();
+  }
+
   Future<void> enemyAttack(
     Future<void> Function(String message, {bool requireConfirmation})
     showMessage,

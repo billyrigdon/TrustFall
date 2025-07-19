@@ -45,6 +45,7 @@ class PartyMember extends SpriteComponent
     required this.level,
     required this.stats,
     required this.attacks,
+    required this.bank,
     required this.spriteAsset,
     this.onInteract,
   }) : currentHP = stats.maxHp.toInt(),
@@ -79,6 +80,7 @@ class PartyMember extends SpriteComponent
 
     await loadHP();
     await loadAttacks();
+    await loadBank();
   }
 
   @override
@@ -163,6 +165,10 @@ class PartyMember extends SpriteComponent
               .map((a) => Attack.fromJson(Map<String, dynamic>.from(a)))
               .toList(),
       spriteAsset: json['spriteAsset'],
+      bank:
+          (json['bank'] as List<dynamic>)
+              .map((a) => Attack.fromJson(Map<String, dynamic>.from(a)))
+              .toList(),
     )..currentHP = json['currentHP'];
   }
 
@@ -174,6 +180,7 @@ class PartyMember extends SpriteComponent
       'currentHP': currentHP,
       'stats': stats.toJson(),
       'attacks': attacks.map((a) => a.toJson()).toList(),
+      'bank': bank.map((a) => a.toJson()).toList(),
       'spriteAsset': spriteAsset,
     };
   }
@@ -215,4 +222,49 @@ class PartyMember extends SpriteComponent
   void addToParty(BattleCharacter member) {
     // TODO: implement addToParty
   }
+
+  @override
+  int currentMP = 0;
+
+  @override
+  List<Attack> bank;
+
+  @override
+  void learnBankMove(Attack attack) {
+    // TODO: implement learnBankMove
+    if (!bank.any((a) => a.name == attack.name)) {
+      bank.add(attack);
+      saveBank();
+    }
+  }
+
+  @override
+  Future<void> loadBank() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('$name-bank-moves');
+
+    if (raw == null || raw.isEmpty) {
+      bank = _defaultBank();
+      await saveBank();
+    } else {
+      attacks =
+          raw
+              .map(
+                (str) =>
+                    Attack.fromJson(Map<String, dynamic>.from(jsonDecode(str))),
+              )
+              .toList();
+    }
+  }
+
+  @override
+  Future<void> saveBank() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = attacks.map((a) => jsonEncode(a.toJson())).toList();
+    await prefs.setStringList('$name-attacks', data);
+  }
+
+  List<Attack> _defaultBank() => [
+    Attack(name: 'Insult', type: AttackType.mental, cost: 10, power: 1.0),
+  ];
 }

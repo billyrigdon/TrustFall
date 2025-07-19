@@ -9,6 +9,7 @@ import 'package:game/models/items.dart';
 import 'package:game/main.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:game/widgets/health_bar.dart';
+import 'package:game/widgets/mental_power_bar.dart';
 
 class BattleOverlay extends StatefulWidget {
   final TrustFall game;
@@ -31,7 +32,9 @@ class BattleOverlayState extends State<BattleOverlay> {
   int selectedIndex = 0;
   bool itemMenuOpen = false;
   bool attackMenuOpen = false;
+  bool bankMenuOpen = false;
   int attackIndex = 0;
+  int bankIndex = 0;
   int turnIndex = 0;
   final SettingsService settings = SettingsService();
   List<String> queuedMessages = [];
@@ -39,7 +42,7 @@ class BattleOverlayState extends State<BattleOverlay> {
   String? modalMessage;
   Completer<void>? _modalCompleter;
 
-  List<String> commands = ['Attack', 'Run'];
+  List<String> commands = ['Attack', 'Bank', 'Run'];
 
   // List<Item> get mainInventory {
   //   final main = battleManager.party.firstWhere((c) => c is MainPlayer);
@@ -59,7 +62,7 @@ class BattleOverlayState extends State<BattleOverlay> {
 
     battleManager = BattleManager(party: widget.party, enemy: widget.enemy);
     if (mainInventory.isNotEmpty) {
-      commands = ['Attack', 'Items', 'Run'];
+      commands = ['Attack', 'Bank', 'Items', 'Run'];
     }
     battleManager.reset();
   }
@@ -75,6 +78,7 @@ class BattleOverlayState extends State<BattleOverlay> {
   }) async {
     setState(() {
       attackMenuOpen = false;
+      bankMenuOpen = false;
       modalMessage = message;
     });
 
@@ -97,33 +101,6 @@ class BattleOverlayState extends State<BattleOverlay> {
 
     return;
   }
-
-  // Future<void> showMessage(
-  //   String message, {
-  //   bool requireConfirmation = false,
-  // }) async {
-  //   setState(() {
-  //     attackMenuOpen = false;
-  //   });
-
-  //   _modalCompleter = Completer<void>();
-
-  //   setState(() {
-  //     modalMessage = message;
-  //   });
-
-  //   if (!requireConfirmation) {
-  //     // auto-complete after delay
-  //     Future.delayed(const Duration(seconds: 2), () {
-  //       if (_modalCompleter != null && !_modalCompleter!.isCompleted) {
-  //         setState(() => modalMessage = null);
-  //         _modalCompleter!.complete();
-  //       }
-  //     });
-  //   }
-
-  //   return _modalCompleter!.future;
-  // }
 
   final ScrollController _scrollController = ScrollController();
 
@@ -155,31 +132,23 @@ class BattleOverlayState extends State<BattleOverlay> {
 
     final isBack = inputLabel == back || inputLabel == 'Backspace';
 
-    // if (modalMessage != null) {
-    //   if (isAction &&
-    //       _modalCompleter != null &&
-    //       !_modalCompleter!.isCompleted) {
-    //     setState(() => modalMessage = null);
-    //     _modalCompleter!.complete();
-    //   }
-    //   return;
-    // }
-
     if (isBack) {
-      if (itemMenuOpen || attackMenuOpen) {
+      if (itemMenuOpen || attackMenuOpen || bankMenuOpen) {
         setState(() {
           itemMenuOpen = false;
           attackMenuOpen = false;
+          bankMenuOpen = false;
           selectedIndex = 0;
           attackIndex = 0;
+          bankIndex = 0;
         });
         return;
       }
     }
 
-    if (isRight && !itemMenuOpen && !attackMenuOpen) {
+    if (isRight && !itemMenuOpen && !attackMenuOpen && !bankMenuOpen) {
       setState(() => selectedIndex = (selectedIndex + 1) % commands.length);
-    } else if (isLeft && !itemMenuOpen && !attackMenuOpen) {
+    } else if (isLeft && !itemMenuOpen && !attackMenuOpen && !bankMenuOpen) {
       setState(
         () =>
             selectedIndex =
@@ -210,6 +179,19 @@ class BattleOverlayState extends State<BattleOverlay> {
             attackIndex =
                 (attackIndex - 1 + currentChar.attacks.length) %
                 currentChar.attacks.length,
+      );
+    } else if (isRight && bankMenuOpen) {
+      final currentChar = battleManager.party[turnIndex];
+
+      setState(() => bankIndex = (bankIndex + 1) % currentChar.bank.length);
+    } else if (isLeft && bankMenuOpen) {
+      final currentChar = battleManager.party[turnIndex];
+
+      setState(
+        () =>
+            bankIndex =
+                (bankIndex - 1 + currentChar.bank.length) %
+                currentChar.bank.length,
       );
     } else if (isAction) {
       // if (modalMessage == null) {
@@ -245,12 +227,32 @@ class BattleOverlayState extends State<BattleOverlay> {
       });
 
       await _endTurn();
+    } else if (bankMenuOpen) {
+      final bankMove = currentChar.bank[bankIndex];
+      await battleManager.mentallyAttackEnemy(
+        currentChar,
+        bankMove,
+        showMessage,
+      );
+
+      setState(() {
+        bankMenuOpen = false;
+        bankIndex = 0;
+      });
+
+      await _endTurn();
     } else {
       switch (commands[selectedIndex]) {
         case 'Attack':
           setState(() {
             attackMenuOpen = true;
             attackIndex = 0;
+          });
+          break;
+        case 'Bank':
+          setState(() {
+            bankMenuOpen = true;
+            bankIndex = 0;
           });
           break;
         case 'Items':
@@ -393,11 +395,19 @@ class BattleOverlayState extends State<BattleOverlay> {
 
                     return SizedBox(
                       width: 100,
-                      child: HealthBar(
-                        hp: member.currentHP,
-                        maxHp: member.stats.maxHp.toInt(),
-                        label: member.name,
-                        isActive: isActive,
+                      child: Column(
+                        children: [
+                          HealthBar(
+                            hp: member.currentHP,
+                            maxHp: member.stats.maxHp.toInt(),
+                            label: member.name,
+                            isActive: isActive,
+                          ),
+                          MentalPowerBar(
+                            mp: member.currentMP,
+                            maxMP: member.stats.maxMP.toInt(),
+                          ),
+                        ],
                       ),
                     );
                   }).toList(),
@@ -416,6 +426,8 @@ class BattleOverlayState extends State<BattleOverlay> {
             child:
                 attackMenuOpen
                     ? _buildAttackMenu()
+                    : bankMenuOpen
+                    ? _buildBankMenu()
                     : itemMenuOpen
                     ? _buildItemMenu()
                     : _buildMainMenu(),
@@ -551,6 +563,35 @@ class BattleOverlayState extends State<BattleOverlay> {
             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
             child: Text(
               '${attack.name} (${(currentChar.stats.strength * attack.power).toInt()} dmg)',
+              style: TextStyle(
+                fontFamily: 'Ithica',
+                fontSize: 22,
+                color: selected ? Colors.white : Colors.white,
+                decoration:
+                    selected ? TextDecoration.underline : TextDecoration.none,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildBankMenu() {
+    final currentChar = battleManager.party[turnIndex];
+    return Container(
+      width: double.infinity,
+      child: Row(
+        // crossAxisAlignment: CrossAxisAlignment.
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(currentChar.bank.length, (i) {
+          final bankMove = currentChar.bank[i];
+          final selected = i == bankIndex;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
+            child: Text(
+              '${bankMove.name} (${(currentChar.stats.intelligence * bankMove.power).toInt()} dmg)',
               style: TextStyle(
                 fontFamily: 'Ithica',
                 fontSize: 22,

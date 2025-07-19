@@ -16,9 +16,11 @@ abstract class CharacterDefinitions {
       stats: CharacterStats(
         charClass: CharacterClass.balanced,
         maxHp: 45,
+        maxMP: 45,
         strength: 1,
       ),
       attacks: [Attack(name: 'Punch', type: AttackType.physical, power: 2)],
+      bank: [Attack(name: 'Lie', type: AttackType.mental, cost: 10, power: 2)],
     ),
     'ghost': Enemy(
       characterId: 'ghost',
@@ -28,9 +30,11 @@ abstract class CharacterDefinitions {
       stats: CharacterStats(
         charClass: CharacterClass.balanced,
         maxHp: 60,
+        maxMP: 20,
         strength: 1,
       ),
       attacks: [Attack(name: 'Spook', type: AttackType.physical, power: 1)],
+      bank: [Attack(name: 'Creep out', type: AttackType.mental, power: 3)],
     ),
   };
 

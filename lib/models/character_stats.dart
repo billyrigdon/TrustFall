@@ -9,6 +9,7 @@ class CharacterStats {
   double xp;
   double xpToNext;
   double maxHp;
+  double maxMP;
   double reputation;
   double confidence;
   double empathy;
@@ -30,6 +31,7 @@ class CharacterStats {
     this.strength = 10,
     this.defense = 10,
     this.maxHp = 50,
+    this.maxMP = 50,
     this.speed = 10,
     this.intelligence = 10,
     required this.charClass,
@@ -90,6 +92,7 @@ class CharacterStats {
     strength += growthRates['strength']!;
     defense += growthRates['defense']!;
     maxHp += growthRates['hp']!;
+    maxMP += growthRates['mp']!;
     speed += growthRates['speed']!;
     intelligence += growthRates['intelligence']!;
   }
@@ -106,6 +109,7 @@ class CharacterStats {
           'intelligence': 1,
           'empathy': 1,
           'reputation': 1,
+          'mp': 2,
         };
       case CharacterClass.manipulator:
         return {
@@ -117,6 +121,7 @@ class CharacterStats {
           'intelligence': 5,
           'empathy': 1,
           'reputation': 1,
+          'mp': 6,
         };
       case CharacterClass.healer:
         return {
@@ -128,6 +133,7 @@ class CharacterStats {
           'intelligence': 3,
           'empathy': 1,
           'reputation': 1,
+          'mp': 3,
         };
       case CharacterClass.balanced:
         return {
@@ -139,6 +145,7 @@ class CharacterStats {
           'intelligence': 2,
           'empathy': 1,
           'reputation': 1,
+          'mp': 4,
         };
     }
   }
@@ -153,6 +160,7 @@ class CharacterStats {
     'reputation': reputation,
     'defense': defense,
     'maxHp': maxHp,
+    'maxMP': maxMP,
     'speed': speed,
     'intelligence': intelligence,
     'charClass': charClass.toString().split('.').last,
@@ -168,6 +176,7 @@ class CharacterStats {
       strength: (json['strength'] ?? 10).toDouble(),
       defense: (json['defense'] ?? 10).toDouble(),
       maxHp: (json['maxHp'] ?? 100).toDouble(),
+      maxMP: (json['maxMP'] ?? 100).toDouble(),
       speed: (json['speed'] ?? 10).toDouble(),
       empathy: (json['empathy'] ?? 10).toDouble(),
       reputation: (json['reputation'] ?? 10).toDouble(),
