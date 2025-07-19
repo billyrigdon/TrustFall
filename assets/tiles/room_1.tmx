@@ -187,18 +187,20 @@
   <object id="29" x="277.333" y="179.333"/>
   <object id="30" x="320" y="118" width="29.3333" height="24.6667">
    <properties>
-    <property name="enemy" type="bool" value="true"/>
+    <property name="characterId" value="dude"/>
+    <property name="enemy" type="bool" value="false"/>
     <property name="level" value="2"/>
     <property name="name" value="dude"/>
-    <property name="spriteAsset" value="spriteAsset.png"/>
-    <property name="type" value="npc"/>
+    <property name="spriteAsset" value="sprite.png"/>
+    <property name="type" value="party_member"/>
    </properties>
   </object>
   <object id="31" x="42.6667" y="78.6667" width="50" height="42">
    <properties>
+    <property name="characterId" value="ghost"/>
     <property name="enemy" type="bool" value="true"/>
     <property name="name" value="ghost"/>
-    <property name="type" value="npc"/>
+    <property name="type" value="enemy"/>
    </properties>
   </object>
   <object id="32" x="214.667" y="164"/>

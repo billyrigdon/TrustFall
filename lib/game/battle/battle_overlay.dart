@@ -39,7 +39,7 @@ class BattleOverlayState extends State<BattleOverlay> {
   String? modalMessage;
   Completer<void>? _modalCompleter;
 
-  final List<String> commands = ['Attack', 'Items', 'Run'];
+  List<String> commands = ['Attack', 'Run'];
 
   // List<Item> get mainInventory {
   //   final main = battleManager.party.firstWhere((c) => c is MainPlayer);
@@ -58,6 +58,9 @@ class BattleOverlayState extends State<BattleOverlay> {
     super.initState();
 
     battleManager = BattleManager(party: widget.party, enemy: widget.enemy);
+    if (mainInventory.isNotEmpty) {
+      commands = ['Attack', 'Items', 'Run'];
+    }
     battleManager.reset();
   }
 
@@ -91,6 +94,17 @@ class BattleOverlayState extends State<BattleOverlay> {
     }
 
     return _modalCompleter!.future;
+  }
+
+  final ScrollController _scrollController = ScrollController();
+
+  void _scrollToSelectedItem(int index) {
+    const itemWidth = 120.0; // adjust if needed
+    _scrollController.animateTo(
+      index * itemWidth,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   void handleInput(String inputLabel) {
@@ -140,16 +154,16 @@ class BattleOverlayState extends State<BattleOverlay> {
                 (selectedIndex - 1 + commands.length) % commands.length,
       );
     } else if (isRight && itemMenuOpen) {
-      setState(
-        () => selectedIndex = (selectedIndex + 1) % mainInventory.length,
-      );
+      setState(() {
+        selectedIndex = (selectedIndex + 1) % mainInventory.length;
+        _scrollToSelectedItem(selectedIndex);
+      });
     } else if (isLeft && itemMenuOpen) {
-      setState(
-        () =>
-            selectedIndex =
-                (selectedIndex - 1 + mainInventory.length) %
-                mainInventory.length,
-      );
+      setState(() {
+        selectedIndex =
+            (selectedIndex - 1 + mainInventory.length) % mainInventory.length;
+        _scrollToSelectedItem(selectedIndex);
+      });
     } else if (isRight && attackMenuOpen) {
       final currentChar = battleManager.party[turnIndex];
 
@@ -181,6 +195,9 @@ class BattleOverlayState extends State<BattleOverlay> {
       setState(() {
         itemMenuOpen = false;
         selectedIndex = 0;
+        if (mainInventory.isEmpty) {
+          commands = ['Attack', 'Run'];
+        }
       });
 
       await _endTurn();
@@ -496,15 +513,18 @@ class BattleOverlayState extends State<BattleOverlay> {
         children: List.generate(currentChar.attacks.length, (i) {
           final attack = currentChar.attacks[i];
           final selected = i == attackIndex;
-          return Text(
-            '${selected ? '▶' : '  '} ${attack.name} (${(currentChar.stats.strength * attack.power).toInt()} dmg)',
-            style: TextStyle(
-              fontFamily: 'Ithica',
-              fontSize: 22,
-              color: selected ? Colors.white : Colors.white,
-              decoration:
-                  selected ? TextDecoration.underline : TextDecoration.none,
-              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
+            child: Text(
+              '${attack.name} (${(currentChar.stats.strength * attack.power).toInt()} dmg)',
+              style: TextStyle(
+                fontFamily: 'Ithica',
+                fontSize: 22,
+                color: selected ? Colors.white : Colors.white,
+                decoration:
+                    selected ? TextDecoration.underline : TextDecoration.none,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+              ),
             ),
           );
         }),
@@ -516,31 +536,78 @@ class BattleOverlayState extends State<BattleOverlay> {
     final filteredItems =
         mainInventory.where((item) => item.type != ItemType.currency).toList();
 
-    // return Column(
-    // crossAxisAlignment: CrossAxisAlignment.start,
-    return Container(
+    return SizedBox(
+      height: 48,
       width: double.infinity,
-      child: Row(
-        // crossAxisAlignment: CrossAxisAlignment.
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(filteredItems.length, (i) {
-          final selected = i == selectedIndex;
-          final item = filteredItems[i];
-          return Text(
-            '${selected ? '▶' : '  '} ${item.name}',
-            style: TextStyle(
-              fontFamily: 'Ithica',
-              fontSize: 22,
-              color: selected ? Colors.white : Colors.white,
-              decoration:
-                  selected ? TextDecoration.underline : TextDecoration.none,
-              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+      child: Center(
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          child: Align(
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize:
+                  MainAxisSize.min, // 👈 important: let row size to its content
+              children: List.generate(filteredItems.length, (i) {
+                final selected = i == selectedIndex;
+                final item = filteredItems[i];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: Text(
+                    item.name,
+                    style: TextStyle(
+                      fontFamily: 'Ithica',
+                      fontSize: 22,
+                      color: Colors.white,
+                      decoration:
+                          selected
+                              ? TextDecoration.underline
+                              : TextDecoration.none,
+                      fontWeight:
+                          selected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                );
+              }),
             ),
-          );
-        }),
+          ),
+        ),
       ),
     );
   }
+
+  // Widget _buildItemMenu() {
+  //   final filteredItems =
+  //       mainInventory.where((item) => item.type != ItemType.currency).toList();
+
+  //   // return Column(
+  //   // crossAxisAlignment: CrossAxisAlignment.start,
+  //   return Container(
+  //     width: double.infinity,
+  //     child: Row(
+  //       // crossAxisAlignment: CrossAxisAlignment.
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       children: List.generate(filteredItems.length, (i) {
+  //         final selected = i == selectedIndex;
+  //         final item = filteredItems[i];
+  //         return Padding(
+  //           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
+  //           child: Text(
+  //             '${item.name}',
+  //             style: TextStyle(
+  //               fontFamily: 'Ithica',
+  //               fontSize: 22,
+  //               color: selected ? Colors.white : Colors.white,
+  //               decoration:
+  //                   selected ? TextDecoration.underline : TextDecoration.none,
+  //               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+  //             ),
+  //           ),
+  //         );
+  //       }),
+  //     ),
+  //   );
+  // }
 
   Widget _buildMainMenu() {
     return Row(
@@ -550,11 +617,6 @@ class BattleOverlayState extends State<BattleOverlay> {
         return SizedBox(
           // width: 75,
           child: Container(
-            // decoration: BoxDecoration(
-            // border: Border.all(color: selected ? Colors.amber : Colors.white),
-            // borderRadius: BorderRadius.circular(6),
-            // color: Colors.black,
-            // ),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
             child: Text(
               textAlign: TextAlign.center,

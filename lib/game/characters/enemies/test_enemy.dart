@@ -25,12 +25,16 @@ class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
 
   String spriteAsset;
 
+  String characterId;
+
   Enemy({
+    required this.characterId,
     required this.name,
     required this.level,
     required this.stats,
     required this.attacks,
     required this.spriteAsset,
+    // required this.onInteract,
   }) : currentHP = stats.maxHp.toInt(),
        super(size: Vector2(30, 60), anchor: Anchor.topLeft);
 

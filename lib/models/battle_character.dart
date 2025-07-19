@@ -1,12 +1,13 @@
 import 'dart:convert';
 
+import 'package:flame/components.dart';
 import 'package:game/models/party_member.dart';
 import 'package:game/models/items.dart';
 import 'package:game/models/attacks.dart';
 import 'package:game/models/character_stats.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-abstract class BattleCharacter {
+abstract class BattleCharacter extends SpriteComponent {
   late String name;
   late CharacterStats stats;
 

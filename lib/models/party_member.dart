@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:ui';
 import 'package:flame/components.dart';
+import 'package:flutter/material.dart';
 import 'package:game/models/equipment.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:game/models/battle_character.dart';
@@ -7,14 +10,16 @@ import 'package:game/models/items.dart';
 import 'package:game/models/attacks.dart';
 import 'package:game/models/character_stats.dart';
 
-class PartyMember extends SpriteComponent implements BattleCharacter {
+class PartyMember extends SpriteComponent
+    with HasGameRef
+    implements BattleCharacter {
   @override
   late String name;
 
   @override
   late CharacterStats stats;
 
-  CharacterClass charClass;
+  // CharacterClass charClass;
 
   @override
   int currentHP = 0;
@@ -25,45 +30,45 @@ class PartyMember extends SpriteComponent implements BattleCharacter {
   @override
   List<Attack> attacks = [];
 
-  PartyMember({required this.name, required this.charClass}) {
-    stats = CharacterStats(charClass: charClass);
-    _init(charClass);
+  // @override
+  int level;
+
+  String spriteAsset;
+
+  String characterId;
+
+  VoidCallback? onInteract;
+
+  PartyMember({
+    required this.characterId,
+    required this.name,
+    required this.level,
+    required this.stats,
+    required this.attacks,
+    required this.spriteAsset,
+    this.onInteract,
+  }) : currentHP = stats.maxHp.toInt(),
+       super(size: Vector2(30, 60), anchor: Anchor.topLeft);
+
+  @override
+  Future<void> onLoad() async {
+    // debugMode = true;
+    sprite = await gameRef.loadSprite(spriteAsset);
+    print('rendered and loaded');
   }
 
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'charClass': charClass.toString().split('.').last,
-    'stats': stats.toJson(), // assumes stats has .toJson()
-    'inventory': inventory.map((i) => i.toJson()).toList(),
-    'attacks': attacks.map((a) => a.toJson()).toList(),
-    'currentHP': currentHP,
-  };
+  Widget get imageWidget => Image.asset(
+    'assets/images/$spriteAsset',
+    // scale: -10,
+    fit: BoxFit.contain,
+    width: Platform.isAndroid ? 64 : 256,
+    height: Platform.isAndroid ? 64 : 256,
+  );
 
-  static PartyMember fromJson(Map<String, dynamic> json) {
-    CharacterClass characterClassFromString(String str) {
-      return CharacterClass.values.firstWhere(
-        (e) => e.toString().split('.').last.toLowerCase() == str.toLowerCase(),
-        orElse: () => CharacterClass.balanced,
-      );
-    }
-
-    final member = PartyMember(
-      name: json['name'],
-      charClass: characterClassFromString(json['charClass']),
-    );
-    member.stats = CharacterStats.fromJson(json['stats']);
-    member.inventory =
-        (json['inventory'] as List)
-            .map(
-              (i) =>
-                  i['slot'] != null ? Equipment.fromJson(i) : Item.fromJson(i),
-            )
-            .toList();
-    member.attacks =
-        (json['attacks'] as List).map((a) => Attack.fromJson(a)).toList();
-    member.currentHP = json['currentHP'];
-    return member;
-  }
+  // PartyMember({required this.name, required this.charClass}) {
+  //   stats = CharacterStats(charClass: charClass);
+  //   _init(charClass);
+  // }
 
   @override
   List<PartyMember> currentParty = [];
@@ -145,6 +150,32 @@ class PartyMember extends SpriteComponent implements BattleCharacter {
               )
               .toList();
     }
+  }
+
+  factory PartyMember.fromJson(Map<String, dynamic> json) {
+    return PartyMember(
+      characterId: json['characterId'],
+      name: json['name'],
+      level: json['level'],
+      stats: CharacterStats.fromJson(Map<String, dynamic>.from(json['stats'])),
+      attacks:
+          (json['attacks'] as List<dynamic>)
+              .map((a) => Attack.fromJson(Map<String, dynamic>.from(a)))
+              .toList(),
+      spriteAsset: json['spriteAsset'],
+    )..currentHP = json['currentHP'];
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'characterId': characterId,
+      'name': name,
+      'level': level,
+      'currentHP': currentHP,
+      'stats': stats.toJson(),
+      'attacks': attacks.map((a) => a.toJson()).toList(),
+      'spriteAsset': spriteAsset,
+    };
   }
 
   @override

@@ -37,7 +37,6 @@ class GhostEnemy extends SpriteComponent
   Future<void> onLoad() async {
     // debugMode = true;
     sprite = await gameRef.loadSprite('ghost_enemy.png');
-    print('rendered and loaded');
   }
 
   Widget get imageWidget => Image.asset(

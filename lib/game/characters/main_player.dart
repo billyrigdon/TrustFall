@@ -344,10 +344,62 @@ class MainPlayer extends SpriteAnimationComponent
           price: 5,
           value: 50,
         ),
-        // Item(name: 'Stabilizer', type: ItemType.medicine, damage: 1, price: 10),
-        // Item(name: 'Toy', type: ItemType.keyItem, damage: 3, price: 5),
-        // Item(name: 'Plushie', type: ItemType.keyItem, damage: 1, price: 15),
-        // Item(name: 'Trinket', type: ItemType.keyItem, damage: 3, price: 100),
+        Item(
+          name: 'Stabilizer',
+          spriteAsset: '',
+          type: ItemType.medicine,
+          damage: 1,
+          price: 10,
+        ),
+        Item(
+          name: 'Toy',
+          spriteAsset: '',
+          type: ItemType.keyItem,
+          damage: 3,
+          price: 5,
+        ),
+        Item(
+          name: 'Plushie',
+          spriteAsset: '',
+          type: ItemType.keyItem,
+          damage: 1,
+          price: 15,
+        ),
+        Item(
+          name: 'Trinket',
+          spriteAsset: '',
+          type: ItemType.keyItem,
+          damage: 3,
+          price: 100,
+        ),
+        Item(
+          name: 'Stabilizer',
+          spriteAsset: '',
+          type: ItemType.medicine,
+          damage: 1,
+          price: 10,
+        ),
+        Item(
+          name: 'Toy',
+          spriteAsset: '',
+          type: ItemType.keyItem,
+          damage: 3,
+          price: 5,
+        ),
+        Item(
+          name: 'Plushie',
+          spriteAsset: '',
+          type: ItemType.keyItem,
+          damage: 1,
+          price: 15,
+        ),
+        Item(
+          name: 'Trinket',
+          spriteAsset: '',
+          type: ItemType.keyItem,
+          damage: 3,
+          price: 100,
+        ),
         Equipment(
           name: 'Shoes',
           slot: EquipmentSlot.footwear,
@@ -524,6 +576,18 @@ class MainPlayer extends SpriteAnimationComponent
       return;
     }
 
+    final nearbyPartyMember = gameRef.world.children
+        .whereType<PartyMember?>()
+        .firstWhere(
+          (member) => member!.toRect().inflate(10).overlaps(toRect()),
+          orElse: () => null,
+        );
+
+    if (nearbyPartyMember != null) {
+      nearbyPartyMember.onInteract?.call();
+      return;
+    }
+
     final nearbyItem = gameRef.world.children
         .whereType<ItemComponent?>()
         .firstWhere(
@@ -546,4 +610,10 @@ class MainPlayer extends SpriteAnimationComponent
         currentParty.map((member) => jsonEncode(member.toJson())).toList();
     await prefs.setStringList('$name-party', jsonList);
   }
+
+  @override
+  double? bleed;
+
+  @override
+  Sprite? sprite;
 }

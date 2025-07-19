@@ -118,6 +118,9 @@ class TrustFall extends FlameGame
   final GlobalKey<KeyboardGamepadListenerState> keyboardListenerKey;
   final GlobalKey<TrustFallTextBoxState> textBoxKey;
   Vector2 mapPixelSize = Vector2.zero();
+  bool dialogOpen = false;
+  DateTime? _lastPauseToggle;
+  final Duration _pauseCooldown = const Duration(milliseconds: 300);
 
   bool get inMenu =>
       overlays.isActive('StartMenu') ||
@@ -291,16 +294,49 @@ class TrustFall extends FlameGame
     });
   }
 
+  // void togglePause() {
+  //   isPaused = !isPaused;
+  //   overlays.remove('TouchControls');
+  //   if (isPaused) {
+  //     overlays.add('PauseMenu');
+  //   } else {
+  //     overlays.remove('PauseMenu');
+  //   }
+  //   keyboardListenerKey.currentState?.regainFocus();
+
+  //   ensureTouchControls();
+  // }
+
   void togglePause() {
+    final now = DateTime.now();
+    print('[TOGGLE] pause requested at $now');
+
+    if (_lastPauseToggle != null) {
+      print(
+        '[TOGGLE] time since last toggle: ${now.difference(_lastPauseToggle!)}',
+      );
+    }
+
+    if (_lastPauseToggle != null &&
+        now.difference(_lastPauseToggle!) < _pauseCooldown) {
+      print('[TOGGLE] blocked by cooldown');
+      return;
+    }
+
+    _lastPauseToggle = now;
     isPaused = !isPaused;
+    print('[TOGGLE] toggled: now paused = $isPaused');
+
     overlays.remove('TouchControls');
     if (isPaused) {
-      overlays.add('PauseMenu');
+      Future.delayed(Duration(milliseconds: 100), () {
+        overlays.add('PauseMenu');
+      });
     } else {
       overlays.remove('PauseMenu');
     }
-    keyboardListenerKey.currentState?.regainFocus();
 
+    keyboardListenerKey.currentState?.regainFocus();
     ensureTouchControls();
   }
 

@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flame/experimental.dart';
 import 'package:flame/game.dart';
 import 'package:flame_tiled/flame_tiled.dart';
+import 'package:game/game/characters/character_list.dart';
 import 'package:game/game/characters/enemies/ghost_enemy.dart';
 import 'package:game/game/characters/enemies/test_enemy.dart';
 import 'package:game/game/characters/main_player.dart';
@@ -13,6 +14,7 @@ import 'package:game/models/attacks.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/models/character_stats.dart';
 import 'package:game/models/items.dart';
+import 'package:game/models/party_member.dart';
 import 'package:game/widgets/door.dart';
 import 'package:game/widgets/wall.dart';
 
@@ -23,7 +25,6 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
   Vector2? doorSpawnCoordinates;
   final Map<String, Vector2> spawnPoints = {};
   String fromOrientation = '';
-  bool _dialogOpen = false;
 
   @override
   Future<void> onLoad() async {
@@ -117,23 +118,23 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
   //       enemy.position = Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2);
 
   //       enemy.add(RectangleHitbox());
-  //       enemy.onInteract = () {
-  //         if (_dialogOpen) return;
-  //         _dialogOpen = true;
-  //         gameRef.showDialogue(
-  //           ['Hi there!', 'Do you want to fight?'],
-  //           choices: ['Yes', 'No'],
-  //           onChoiceSelected: (choice) {
-  //             _dialogOpen = false;
-  //             if (choice == 'Yes') {
-  //               gameRef.startBattle([
-  //                 gameRef.player as BattleCharacter,
-  //                 ...(gameRef.player.currentParty
-  //                     .where((c) => c.name != gameRef.player.name)
-  //                     .toList()),
-  //               ], enemy);
-  //             }
-  //           },
+  // enemy.onInteract = () {
+  //   if (_dialogOpen) return;
+  //   _dialogOpen = true;
+  //   gameRef.showDialogue(
+  //     ['Hi there!', 'Do you want to fight?'],
+  //     choices: ['Yes', 'No'],
+  //     onChoiceSelected: (choice) {
+  //       _dialogOpen = false;
+  //       if (choice == 'Yes') {
+  //         gameRef.startBattle([
+  //           gameRef.player as BattleCharacter,
+  //           ...(gameRef.player.currentParty
+  //               .where((c) => c.name != gameRef.player.name)
+  //               .toList()),
+  //         ], enemy);
+  //       }
+  //     },
   //         );
   //       };
 
@@ -144,30 +145,21 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
 
   void _spawnRoomObjects(TiledComponent map) {
     final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
-
+    // print(objectGroup!.objects.length);
     for (final obj in objectGroup!.objects) {
-      final isNpc = obj.properties.any(
-        (p) => p.name == 'type' && p.value == 'npc',
-      );
-      final isEnemy = obj.properties.any(
-        (p) => p.name == 'enemy' && p.value == true,
-      );
-
-      final isGhost = obj.properties.any(
-        (p) => p.name == 'name' && p.value == 'ghost',
+      print(obj.toString());
+      print(obj.properties);
+      final typeProp = obj.properties.firstWhere(
+        (p) => p.name == 'type',
+        orElse: () => Property(name: '', value: '', type: PropertyType.string),
       );
 
-      final isDude = obj.properties.any(
-        (p) => p.name == 'name' && p.value == 'dude',
-      );
+      final isEnemy = typeProp.value == 'enemy';
+      final isPartyMember = typeProp.value == 'party_member';
+      final isItem = typeProp.value == 'item';
 
-      final isItem = obj.properties.any(
-        (p) => p.name == 'type' && p.value == 'item',
-      );
-
-      //TODO: pull properties from json/tiled
       if (isItem) {
-        Item item = Item(
+        final item = Item(
           name: 'toy',
           type: ItemType.keyItem,
           damage: 3,
@@ -182,92 +174,166 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
         );
 
         gameRef.world.add(itemComponent);
+        continue;
       }
 
-      if (isNpc && isEnemy) {
-        Enemy enemy;
+      final idProp = obj.properties.firstWhere(
+        (p) => p.name == 'characterId',
+        orElse: () => Property(name: '', value: '', type: PropertyType.string),
+      );
 
-        if (isGhost) {
-          enemy = Enemy(
-            name: 'Ghost',
-            level: 3,
-            spriteAsset: 'ghost_enemy.png',
-            stats: CharacterStats(
-              charClass: CharacterClass.balanced,
-              maxHp: 60,
-              strength: 1,
-            ),
-            attacks: [
-              Attack(name: 'Spook', type: AttackType.physical, power: 0.03),
-            ],
-          );
-        } else {
-          // Default to dude
-          enemy = Enemy(
-            name: 'Dude',
-            level: 2,
-            spriteAsset: 'sprite.png',
-            stats: CharacterStats(
-              charClass: CharacterClass.balanced,
-              maxHp: 60,
-              strength: 1,
-            ),
-            attacks: [
-              Attack(name: 'Punch', type: AttackType.physical, power: 0.03),
-            ],
-          );
-        }
+      final id = idProp.value.toString();
+      final definition =
+          MainPlayerHouseCharacterDefinitions(
+            gameRef: gameRef,
+          ).getCharacters()[id];
 
-        enemy.position = Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2);
-        enemy.add(RectangleHitbox());
+      if (definition == null) {
+        // print('Character ID "$id" not found in enemyDefinitions');
+        continue;
+      }
 
-        if (isGhost) {
-          // 👻 Ghost says boo then battles
-          enemy.onInteract = () {
-            if (_dialogOpen) return;
-            _dialogOpen = true;
+      final position = Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2);
+      definition.position = position;
+      definition.add(RectangleHitbox());
 
-            gameRef.showDialogue(
-              ['Boo!'],
-              onComplete: () {
-                _dialogOpen = false;
-                print('starting battle');
-                gameRef.startBattle([
-                  gameRef.player as BattleCharacter,
-                  ...(gameRef.player.currentParty
-                      .where((c) => c.name != gameRef.player.name)
-                      .toList()),
-                ], enemy);
-              },
-            );
-          };
-        } else if (isDude) {
-          // 🧍 Dude gives a choice
-          enemy.onInteract = () {
-            if (_dialogOpen) return;
-            _dialogOpen = true;
-            gameRef.showDialogue(
-              ['Hi there!', 'Do you want to fight?'],
-              choices: ['Yes', 'No'],
-              onChoiceSelected: (choice) {
-                _dialogOpen = false;
-                if (choice == 'Yes') {
-                  gameRef.startBattle([
-                    gameRef.player as BattleCharacter,
-                    ...gameRef.player.currentParty
-                        .where((c) => c.name != gameRef.player.name)
-                        .toList(),
-                  ], enemy);
-                }
-              },
-            );
-          };
-        }
+      if (isEnemy && definition is Enemy) {
+        // Use optional pre-defined behavior, or assign generic battle trigger
+        // definition.
 
-        gameRef.world.add(enemy);
+        gameRef.world.add(definition);
+      } else if (isPartyMember && definition is PartyMember) {
+        gameRef.world.add(definition);
       }
     }
   }
+
+  // void _spawnRoomObjects(TiledComponent map) {
+  //   final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
+
+  //   for (final obj in objectGroup!.objects) {
+  //     final isNpc = obj.properties.any(
+  //       (p) => p.name == 'type' && p.value == 'npc',
+  //     );
+  //     final isEnemy = obj.properties.any(
+  //       (p) => p.name == 'enemy' && p.value == true,
+  //     );
+
+  //     final isGhost = obj.properties.any(
+  //       (p) => p.name == 'name' && p.value == 'ghost',
+  //     );
+
+  //     final isDude = obj.properties.any(
+  //       (p) => p.name == 'name' && p.value == 'dude',
+  //     );
+
+  //     final isItem = obj.properties.any(
+  //       (p) => p.name == 'type' && p.value == 'item',
+  //     );
+
+  //     //TODO: pull properties from json/tiled
+  //     if (isItem) {
+  //       Item item = Item(
+  //         name: 'toy',
+  //         type: ItemType.keyItem,
+  //         damage: 3,
+  //         value: 10,
+  //         price: 50,
+  //         spriteAsset: 'toy_item.png',
+  //       );
+
+  //       final itemComponent = ItemComponent(
+  //         item: item,
+  //         position: Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2),
+  //       );
+
+  //       gameRef.world.add(itemComponent);
+  //     }
+
+  //     if (isNpc && isEnemy) {
+  //       Enemy enemy;
+
+  //       if (isGhost) {
+  //         enemy = Enemy(
+  //           name: 'Ghost',
+  //           level: 3,
+  //           spriteAsset: 'ghost_enemy.png',
+  //           stats: CharacterStats(
+  //             charClass: CharacterClass.balanced,
+  //             maxHp: 60,
+  //             strength: 1,
+  //           ),
+  //           attacks: [
+  //             Attack(name: 'Spook', type: AttackType.physical, power: 0.03),
+  //           ],
+  //         );
+  //       } else {
+  //         // Default to dude
+  //         enemy = Enemy(
+  //           name: 'Dude',
+  //           level: 2,
+  //           spriteAsset: 'sprite.png',
+  //           stats: CharacterStats(
+  //             charClass: CharacterClass.balanced,
+  //             maxHp: 60,
+  //             strength: 1,
+  //           ),
+  //           attacks: [
+  //             Attack(name: 'Punch', type: AttackType.physical, power: 0.03),
+  //           ],
+  //         );
+  //       }
+
+  //       enemy.position = Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2);
+  //       enemy.add(RectangleHitbox());
+
+  //       if (isGhost) {
+  //         // 👻 Ghost says boo then battles
+  //         enemy.onInteract = () {
+  //           if (_dialogOpen) return;
+  //           _dialogOpen = true;
+
+  //           gameRef.showDialogue(
+  //             ['Boo!'],
+  //             onComplete: () {
+  //               _dialogOpen = false;
+  //               print('starting battle');
+  //               gameRef.startBattle([
+  //                 gameRef.player as BattleCharacter,
+  //                 ...(gameRef.player.currentParty
+  //                     .where((c) => c.name != gameRef.player.name)
+  //                     .toList()),
+  //               ], enemy);
+  //             },
+  //           );
+  //         };
+  //       } else if (isDude) {
+  //         // 🧍 Dude gives a choice
+  //         enemy.onInteract = () {
+  //           if (_dialogOpen) return;
+  //           _dialogOpen = true;
+  //           gameRef.showDialogue(
+  //             ['Hi there!', 'Do you want to fight?'],
+  //             choices: ['Yes', 'No'],
+  //             onChoiceSelected: (choice) {
+  //               _dialogOpen = false;
+  //               if (choice == 'Yes') {
+  //                 gameRef.startBattle([
+  //                   gameRef.player as BattleCharacter,
+  //                   ...gameRef.player.currentParty
+  //                       .where((c) => c.name != gameRef.player.name)
+  //                       .toList(),
+  //                 ], enemy);
+  //               }
+  //             },
+  //           );
+  //         };
+  //       }
+
+  //       gameRef.world.add(enemy);
+  //     }
+  //   }
+  // }
 
   Vector2 getSpawnPoint({
     required String fromRoom,
