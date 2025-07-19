@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:game/models/battle_character.dart';
-import 'package:game/game/characters/enemies/test_enemy.dart';
+import 'package:game/game/characters/enemies/enemy.dart';
 import 'package:game/models/items.dart';
 import 'package:game/models/attacks.dart';
 
@@ -44,8 +44,6 @@ class BattleManager extends ChangeNotifier {
       '${attacker.name} used ${attack.name} and dealt $damage!',
     );
 
-    playerTurn = false;
-
     if (!enemy.isAlive) {
       for (final member in party) {
         if (member.isAlive) {
@@ -59,7 +57,7 @@ class BattleManager extends ChangeNotifier {
       }
       await showMessage('You won!', requireConfirmation: true);
       battleEnded = true;
-    } 
+    }
 
     notifyListeners();
   }
@@ -126,5 +124,4 @@ class BattleManager extends ChangeNotifier {
 
     notifyListeners();
   }
-
 }

@@ -6,7 +6,7 @@ import 'package:flame/game.dart';
 import 'package:flame_tiled/flame_tiled.dart';
 import 'package:game/game/characters/character_list.dart';
 import 'package:game/game/characters/enemies/ghost_enemy.dart';
-import 'package:game/game/characters/enemies/test_enemy.dart';
+import 'package:game/game/characters/enemies/enemy.dart';
 import 'package:game/game/characters/main_player.dart';
 import 'package:game/main.dart';
 import 'package:game/game/scenes/main_player_house/main_player_house_room.dart';

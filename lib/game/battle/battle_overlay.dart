@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:game/game/battle/battle_manager.dart';
 import 'package:game/models/battle_character.dart';
-import 'package:game/game/characters/enemies/test_enemy.dart' as game_enemy;
+import 'package:game/game/characters/enemies/enemy.dart' as game_enemy;
 import 'package:game/game/characters/main_player.dart';
 import 'package:game/models/items.dart';
 import 'package:game/main.dart';
@@ -75,26 +75,55 @@ class BattleOverlayState extends State<BattleOverlay> {
   }) async {
     setState(() {
       attackMenuOpen = false;
+      modalMessage = message;
     });
 
     _modalCompleter = Completer<void>();
 
-    setState(() {
-      modalMessage = message;
-    });
-
     if (!requireConfirmation) {
-      // auto-complete after delay
-      Future.delayed(const Duration(seconds: 2), () {
-        if (_modalCompleter != null && !_modalCompleter!.isCompleted) {
-          setState(() => modalMessage = null);
-          _modalCompleter!.complete();
-        }
-      });
+      // Prevent early dismissal
+      await Future.delayed(const Duration(seconds: 2));
+      if (_modalCompleter != null && !_modalCompleter!.isCompleted) {
+        setState(() => modalMessage = null);
+        _modalCompleter!.complete();
+      }
+    } else {
+      await Future.delayed(const Duration(seconds: 4));
+      if (_modalCompleter != null && !_modalCompleter!.isCompleted) {
+        setState(() => modalMessage = null);
+        _modalCompleter!.complete();
+      }
     }
 
-    return _modalCompleter!.future;
+    return;
   }
+
+  // Future<void> showMessage(
+  //   String message, {
+  //   bool requireConfirmation = false,
+  // }) async {
+  //   setState(() {
+  //     attackMenuOpen = false;
+  //   });
+
+  //   _modalCompleter = Completer<void>();
+
+  //   setState(() {
+  //     modalMessage = message;
+  //   });
+
+  //   if (!requireConfirmation) {
+  //     // auto-complete after delay
+  //     Future.delayed(const Duration(seconds: 2), () {
+  //       if (_modalCompleter != null && !_modalCompleter!.isCompleted) {
+  //         setState(() => modalMessage = null);
+  //         _modalCompleter!.complete();
+  //       }
+  //     });
+  //   }
+
+  //   return _modalCompleter!.future;
+  // }
 
   final ScrollController _scrollController = ScrollController();
 
@@ -108,6 +137,9 @@ class BattleOverlayState extends State<BattleOverlay> {
   }
 
   void handleInput(String inputLabel) {
+    if (modalMessage != null) {
+      return;
+    }
     final up = settings.getBinding('MoveUp');
     final down = settings.getBinding('MoveDown');
     final left = settings.getBinding('MoveLeft');
@@ -123,15 +155,15 @@ class BattleOverlayState extends State<BattleOverlay> {
 
     final isBack = inputLabel == back || inputLabel == 'Backspace';
 
-    if (modalMessage != null) {
-      if (isAction &&
-          _modalCompleter != null &&
-          !_modalCompleter!.isCompleted) {
-        setState(() => modalMessage = null);
-        _modalCompleter!.complete();
-      }
-      return;
-    }
+    // if (modalMessage != null) {
+    //   if (isAction &&
+    //       _modalCompleter != null &&
+    //       !_modalCompleter!.isCompleted) {
+    //     setState(() => modalMessage = null);
+    //     _modalCompleter!.complete();
+    //   }
+    //   return;
+    // }
 
     if (isBack) {
       if (itemMenuOpen || attackMenuOpen) {
@@ -180,7 +212,9 @@ class BattleOverlayState extends State<BattleOverlay> {
                 currentChar.attacks.length,
       );
     } else if (isAction) {
+      // if (modalMessage == null) {
       _handleSelection();
+      // }
     }
   }
 
@@ -256,7 +290,7 @@ class BattleOverlayState extends State<BattleOverlay> {
         if (mounted) widget.game.endBattle();
       }
 
-      await battleManager.enemyAttack(showMessage);
+      if (turnIndex == 0) await battleManager.enemyAttack(showMessage);
     }
   }
 

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:game/game/battle/battle_overlay.dart';
 import 'package:game/models/attacks.dart';
 import 'package:game/models/battle_character.dart';
-import 'package:game/game/characters/enemies/test_enemy.dart';
+import 'package:game/game/characters/enemies/enemy.dart';
 import 'package:game/game/characters/main_player.dart';
 import 'package:game/game/menus/pause_menu.dart';
 import 'package:game/game/menus/settings_menu.dart';

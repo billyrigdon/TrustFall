@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:game/game/characters/enemies/test_enemy.dart';
+import 'package:game/game/characters/enemies/enemy.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/models/equipment.dart';
 import 'package:game/models/party_member.dart';

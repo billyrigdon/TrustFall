@@ -167,7 +167,11 @@ class PauseMenuState extends State<PauseMenu> {
                 backgroundColor: Colors.black,
                 title: const Text(
                   'Use on who?',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Ithica',
+                    fontSize: 22,
+                  ),
                 ),
                 content: Container(
                   width:
@@ -188,15 +192,22 @@ class PauseMenuState extends State<PauseMenu> {
                         thumbVisibility: true,
                         child: Container(
                           color:
-                              isSelected ? Colors.amber.withOpacity(0.2) : null,
+                              isSelected ? Colors.white.withOpacity(0.2) : null,
                           child: ListTile(
                             title: Text(
                               member.name,
-                              style: const TextStyle(color: Colors.white),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Ithica',
+                                fontSize: 24,
+                              ),
                             ),
                             subtitle: Text(
                               'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
-                              style: const TextStyle(color: Colors.white54),
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontFamily: 'Ithica',
+                              ),
                             ),
                             onTap: () {
                               if (!_partySelectionCompleter!.isCompleted) {
@@ -237,7 +248,11 @@ class PauseMenuState extends State<PauseMenu> {
     if (items.isEmpty) {
       return const Text(
         'No items in inventory.',
-        style: TextStyle(color: Colors.white70),
+        style: TextStyle(
+          color: Colors.white70,
+          fontFamily: 'Ithica',
+          fontSize: 22,
+        ),
       );
     }
 
@@ -250,12 +265,26 @@ class PauseMenuState extends State<PauseMenu> {
 
         return Container(
           color:
-              isSelected ? Colors.amber.withOpacity(0.2) : Colors.transparent,
+              isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
           child: ListTile(
-            title: Text(item.name, style: const TextStyle(color: Colors.white)),
+            title: Text(
+              item.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: 'Ithica',
+                fontSize: 22,
+              ),
+            ),
             trailing: TextButton(
               onPressed: () => _useItem(item),
-              child: const Text('Use', style: TextStyle(color: Colors.amber)),
+              child: const Text(
+                'Use',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Ithica',
+                  fontSize: 20,
+                ),
+              ),
             ),
           ),
         );
@@ -267,7 +296,7 @@ class PauseMenuState extends State<PauseMenu> {
   Widget _buildEquipment() {
     return const Text(
       'Equipment screen coming soon.',
-      style: TextStyle(color: Colors.white70),
+      style: TextStyle(color: Colors.white70, fontFamily: 'Ithica'),
     );
   }
 
@@ -290,24 +319,37 @@ class PauseMenuState extends State<PauseMenu> {
           final isSelected = i == selectedPartyStatsIndex;
 
           return Container(
-            color: isSelected ? Colors.amber.withOpacity(0.2) : null,
+            color: isSelected ? Colors.white.withOpacity(0.2) : null,
             padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '${member.name} - Lvl ${member.stats.level}',
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Ithica',
+                    fontSize: 22,
+                  ),
                 ),
                 Text(
                   'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Ithica',
+                  ),
                 ),
-                const Text('Attacks:', style: TextStyle(color: Colors.white70)),
+                const Text(
+                  'Attacks:',
+                  style: TextStyle(color: Colors.white70, fontFamily: 'Ithica'),
+                ),
                 ...member.attacks.map(
                   (a) => Text(
                     '- ${a.name} (${a.type.name}, ${a.power}x)',
-                    style: const TextStyle(color: Colors.white54),
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontFamily: 'Ithica',
+                    ),
                   ),
                 ),
                 const Divider(color: Colors.white24),
@@ -347,17 +389,21 @@ class PauseMenuState extends State<PauseMenu> {
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            fontFamily: '8-bit-limit',
           ),
         ),
         const SizedBox(height: 12),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Resolution', style: TextStyle(color: Colors.white)),
+            const Text(
+              'Resolution',
+              style: TextStyle(color: Colors.white, fontFamily: 'Ithica'),
+            ),
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_left, color: Colors.amber),
+                  icon: const Icon(Icons.arrow_left, color: Colors.white),
                   onPressed: () async {
                     final index = resolutionOptions.indexOf(current);
                     final prev =
@@ -377,9 +423,15 @@ class PauseMenuState extends State<PauseMenu> {
                     );
                   },
                 ),
-                Text(current, style: const TextStyle(color: Colors.amber)),
+                Text(
+                  current,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Ithica',
+                  ),
+                ),
                 IconButton(
-                  icon: const Icon(Icons.arrow_right, color: Colors.amber),
+                  icon: const Icon(Icons.arrow_right, color: Colors.white),
                   onPressed: () async {
                     final index = resolutionOptions.indexOf(current);
                     final next = (index + 1) % resolutionOptions.length;
@@ -428,7 +480,7 @@ class PauseMenuState extends State<PauseMenu> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.black.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(16),
+          // borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white),
         ),
         child: Column(
@@ -436,12 +488,20 @@ class PauseMenuState extends State<PauseMenu> {
           children: [
             const Text(
               'Paused',
-              style: TextStyle(fontSize: 24, color: Colors.white),
+              style: TextStyle(
+                fontSize: 32,
+                color: Colors.white,
+                fontFamily: '8-bit-limit',
+              ),
             ),
             const SizedBox(height: 12),
             Text(
               'Money: \$${widget.player.money}',
-              style: const TextStyle(color: Colors.amber, fontSize: 16),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontFamily: 'Ithica',
+              ),
             ),
             const SizedBox(height: 8),
 
@@ -454,7 +514,9 @@ class PauseMenuState extends State<PauseMenu> {
                   child: Text(
                     tabs[i],
                     style: TextStyle(
-                      color: selected ? Colors.amber : Colors.white,
+                      fontSize: 22,
+                      fontFamily: 'Ithica',
+                      color: selected ? Colors.white : Colors.white,
                       fontWeight:
                           selected ? FontWeight.bold : FontWeight.normal,
                     ),

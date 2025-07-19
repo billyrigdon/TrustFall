@@ -1,5 +1,5 @@
 import 'package:flame/components.dart';
-import 'package:game/game/characters/enemies/test_enemy.dart';
+import 'package:game/game/characters/enemies/enemy.dart';
 import 'package:game/main.dart';
 import 'package:game/models/attacks.dart';
 import 'package:game/models/battle_character.dart';
@@ -7,13 +7,9 @@ import 'package:game/models/character_stats.dart';
 import 'package:game/models/party_member.dart';
 
 abstract class CharacterDefinitions {
-  // late final  characters;
-
-  // @override
-  // Future<void> onLoad() async {
   static final Map<String, BattleCharacter> characters = {
     'dude': PartyMember(
-      characterId: '1',
+      characterId: 'dude',
       name: 'Dude',
       level: 2,
       spriteAsset: 'sprite.png',
@@ -22,10 +18,10 @@ abstract class CharacterDefinitions {
         maxHp: 45,
         strength: 1,
       ),
-      attacks: [Attack(name: 'Punch', type: AttackType.physical, power: 0.03)],
+      attacks: [Attack(name: 'Punch', type: AttackType.physical, power: 2)],
     ),
     'ghost': Enemy(
-      characterId: '2',
+      characterId: 'ghost',
       name: 'Ghost',
       level: 3,
       spriteAsset: 'ghost_enemy.png',
@@ -34,7 +30,7 @@ abstract class CharacterDefinitions {
         maxHp: 60,
         strength: 1,
       ),
-      attacks: [Attack(name: 'Spook', type: AttackType.physical, power: 0.03)],
+      attacks: [Attack(name: 'Spook', type: AttackType.physical, power: 1)],
     ),
   };
 
@@ -70,7 +66,7 @@ class MainPlayerHouseCharacterDefinitions {
     return ghost;
   }
 
-  PartyMember getDude() {
+  PartyMember? getDude() {
     PartyMember dude = CharacterDefinitions.get('dude') as PartyMember;
     dude.onInteract = () {
       if (gameRef.dialogOpen) return;
@@ -87,6 +83,10 @@ class MainPlayerHouseCharacterDefinitions {
         },
       );
     };
-    return dude;
+    bool isInParty = gameRef.player.currentParty.any(
+      (member) => member.characterId == 'dude',
+    );
+    if (!isInParty) return dude;
+    return null;
   }
 }
