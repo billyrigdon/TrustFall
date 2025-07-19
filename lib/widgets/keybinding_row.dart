@@ -100,14 +100,25 @@ class KeyBindingRowState extends State<KeyBindingRow> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(widget.label, style: const TextStyle(color: Colors.white)),
+          Text(
+            widget.label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Ithica',
+              fontSize: 24,
+            ),
+          ),
           TextButton(
             onPressed: _startListening,
             child: Text(
               listening
                   ? 'Press a key or gamepad button...'
                   : widget.currentBinding ?? 'Unbound',
-              style: TextStyle(color: listening ? Colors.amber : Colors.cyan),
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Ithica',
+                fontSize: 20,
+              ),
             ),
           ),
         ],

@@ -305,11 +305,14 @@ class SettingsMenuState extends State<SettingsMenu> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontFamily: 'Ithica'),
+        ),
         DropdownButton<String>(
           value: value,
           dropdownColor: Colors.black,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontFamily: 'Ithica'),
           items:
               options.map((o) {
                 return DropdownMenuItem(value: o, child: Text(o));
@@ -331,11 +334,18 @@ class SettingsMenuState extends State<SettingsMenu> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: 'Ithica',
+            fontSize: 24,
+          ),
+        ),
         Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.arrow_left, color: Colors.amber),
+              icon: const Icon(Icons.arrow_left, color: Colors.white),
               onPressed: () {
                 final prevIndex =
                     (currentIndex - 1 + options.length) % options.length;
@@ -345,12 +355,14 @@ class SettingsMenuState extends State<SettingsMenu> {
             Text(
               value,
               style: const TextStyle(
+                fontFamily: 'Ithica',
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
+                fontSize: 20,
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.arrow_right, color: Colors.amber),
+              icon: const Icon(Icons.arrow_right, color: Colors.white),
               onPressed: () {
                 final nextIndex = (currentIndex + 1) % options.length;
                 onChanged(options[nextIndex]);
@@ -393,7 +405,10 @@ class SettingsMenuState extends State<SettingsMenu> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontFamily: 'Ithica'),
+        ),
         Switch(
           value: useDpad,
           onChanged: (val) async {
@@ -415,11 +430,14 @@ class SettingsMenuState extends State<SettingsMenu> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontFamily: 'Ithica'),
+        ),
         DropdownButton<String>(
           value: value,
           dropdownColor: Colors.black,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontFamily: 'Ithica'),
           items:
               options
                   .map((o) => DropdownMenuItem(value: o, child: Text(o)))
@@ -438,9 +456,20 @@ class SettingsMenuState extends State<SettingsMenu> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: 'Ithica',
+            fontSize: 24,
+          ),
+        ),
         Expanded(
           child: Slider(
+            thumbColor: Colors.white,
+            activeColor: Colors.white,
+            overlayColor: MaterialStateProperty.all(Colors.white),
+            inactiveColor: Colors.white,
             value: value,
             onChanged: onChanged,
             min: label == 'Font Size' ? 10 : 0,
@@ -458,11 +487,23 @@ class SettingsMenuState extends State<SettingsMenu> {
 
   Widget _buildBackButton() {
     return ElevatedButton(
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.all(Colors.transparent),
+        foregroundColor: MaterialStateProperty.all(Colors.transparent),
+        elevation: MaterialStateProperty.all(0.0),
+      ),
       onPressed: () {
         print('pressed');
         widget.game.returnToStartMenu();
       },
-      child: const Text('Back'),
+      child: const Text(
+        'Back',
+        style: TextStyle(
+          fontFamily: 'Ithica',
+          fontSize: 24,
+          color: Colors.white,
+        ),
+      ),
     );
   }
 
@@ -575,7 +616,12 @@ class SettingsMenuState extends State<SettingsMenu> {
                 children: [
                   const Text(
                     'Settings',
-                    style: TextStyle(color: Colors.amber, fontSize: 24),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontFamily: 'Ithica',
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Expanded(
@@ -589,7 +635,7 @@ class SettingsMenuState extends State<SettingsMenu> {
                               isSelected
                                   ? BoxDecoration(
                                     border: Border.all(
-                                      color: Colors.amber,
+                                      color: Colors.white,
                                       width: 2,
                                     ),
                                     borderRadius: BorderRadius.circular(6),

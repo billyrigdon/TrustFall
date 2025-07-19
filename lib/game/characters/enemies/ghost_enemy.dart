@@ -8,7 +8,9 @@ import 'package:game/models/items.dart';
 import 'package:game/models/attacks.dart';
 import 'package:game/models/character_stats.dart';
 
-class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
+class GhostEnemy extends SpriteComponent
+    with HasGameRef
+    implements BattleCharacter {
   @override
   String name;
 
@@ -23,26 +25,23 @@ class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
 
   final int level;
 
-  String spriteAsset;
-
-  Enemy({
+  GhostEnemy({
     required this.name,
     required this.level,
     required this.stats,
     required this.attacks,
-    required this.spriteAsset,
   }) : currentHP = stats.maxHp.toInt(),
        super(size: Vector2(30, 60), anchor: Anchor.topLeft);
 
   @override
   Future<void> onLoad() async {
     // debugMode = true;
-    sprite = await gameRef.loadSprite(spriteAsset);
+    sprite = await gameRef.loadSprite('ghost_enemy.png');
     print('rendered and loaded');
   }
 
   Widget get imageWidget => Image.asset(
-    'assets/images/$spriteAsset',
+    'assets/images/ghost_enemy.png',
     // scale: -10,
     fit: BoxFit.fitHeight,
     width: Platform.isAndroid ? 64 : 256,

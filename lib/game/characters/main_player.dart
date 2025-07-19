@@ -339,14 +339,15 @@ class MainPlayer extends SpriteAnimationComponent
         Item(
           name: 'Cookie',
           type: ItemType.food,
+          spriteAsset: '',
           damage: 1,
           price: 5,
           value: 50,
         ),
-        Item(name: 'Stabilizer', type: ItemType.medicine, damage: 1, price: 10),
-        Item(name: 'Toy', type: ItemType.keyItem, damage: 3, price: 5),
-        Item(name: 'Plushie', type: ItemType.keyItem, damage: 1, price: 15),
-        Item(name: 'Trinket', type: ItemType.keyItem, damage: 3, price: 100),
+        // Item(name: 'Stabilizer', type: ItemType.medicine, damage: 1, price: 10),
+        // Item(name: 'Toy', type: ItemType.keyItem, damage: 3, price: 5),
+        // Item(name: 'Plushie', type: ItemType.keyItem, damage: 1, price: 15),
+        // Item(name: 'Trinket', type: ItemType.keyItem, damage: 3, price: 100),
         Equipment(
           name: 'Shoes',
           slot: EquipmentSlot.footwear,
@@ -367,8 +368,13 @@ class MainPlayer extends SpriteAnimationComponent
     final existingCurrency = inventory.firstWhere(
       (item) => item.type == ItemType.currency,
       orElse:
-          () =>
-              Item(name: 'Money', type: ItemType.currency, damage: 0, value: 0),
+          () => Item(
+            name: 'Money',
+            spriteAsset: '',
+            type: ItemType.currency,
+            damage: 0,
+            value: 0,
+          ),
     );
 
     inventory.removeWhere((item) => item.type == ItemType.currency);
@@ -399,8 +405,13 @@ class MainPlayer extends SpriteAnimationComponent
     final bits = inventory.firstWhere(
       (item) => item.type == ItemType.currency,
       orElse:
-          () =>
-              Item(name: 'Bits', type: ItemType.currency, damage: 0, value: 0),
+          () => Item(
+            name: 'Bits',
+            spriteAsset: '',
+            type: ItemType.currency,
+            damage: 0,
+            value: 0,
+          ),
     );
     return bits.value ?? 0;
   }
@@ -416,6 +427,7 @@ class MainPlayer extends SpriteAnimationComponent
         type: bits.type,
         damage: 0,
         value: amount,
+        spriteAsset: '',
       );
       saveInventory();
     }
@@ -485,8 +497,23 @@ class MainPlayer extends SpriteAnimationComponent
     saveParty();
   }
 
+  // void interact() {
+  //   print('interacting');
+  //   final nearbyEnemy = gameRef.world.children.whereType<Enemy?>().firstWhere(
+  //     (enemy) => enemy!.toRect().inflate(10).overlaps(toRect()),
+  //     orElse: () => null,
+  //   );
+
+  //   if (nearbyEnemy != null) {
+  //     nearbyEnemy.onInteract?.call();
+  //   } else {
+  //     print('No nearby enemy found');
+  //   }
+  // }
+
   void interact() {
     print('interacting');
+
     final nearbyEnemy = gameRef.world.children.whereType<Enemy?>().firstWhere(
       (enemy) => enemy!.toRect().inflate(10).overlaps(toRect()),
       orElse: () => null,
@@ -494,9 +521,22 @@ class MainPlayer extends SpriteAnimationComponent
 
     if (nearbyEnemy != null) {
       nearbyEnemy.onInteract?.call();
-    } else {
-      print('No nearby enemy found');
+      return;
     }
+
+    final nearbyItem = gameRef.world.children
+        .whereType<ItemComponent?>()
+        .firstWhere(
+          (item) => item!.toRect().inflate(10).overlaps(toRect()),
+          orElse: () => null,
+        );
+
+    if (nearbyItem != null) {
+      nearbyItem.tryPickUp(position, toRect());
+      return;
+    }
+
+    print('Nothing nearby');
   }
 
   @override

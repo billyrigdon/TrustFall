@@ -21,9 +21,7 @@ class Equipment extends Item {
     this.defense = 0,
     this.intelligence = 0,
     super.price,
-  }) : super(
-         type: ItemType.equipment,
-       );
+  }) : super(type: ItemType.equipment, spriteAsset: '');
 
   @override
   Map<String, dynamic> toJson() => {

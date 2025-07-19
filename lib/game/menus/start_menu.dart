@@ -101,6 +101,9 @@ class StartMenuState extends State<StartMenu> {
     }
   }
 
+  // @override
+  // Widget build(BuildContext context) {
+
   @override
   Widget build(BuildContext context) {
     if (!isReady) {
@@ -117,26 +120,81 @@ class StartMenuState extends State<StartMenu> {
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: List.generate(options.length, (i) {
-                final selected = i == selectedIndex;
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 40.0),
                   child: Text(
-                    '${selected ? '▶' : '  '} ${options[i]}',
+                    'TrustFall',
                     style: TextStyle(
-                      fontSize: 24,
-                      color: selected ? Colors.amber : Colors.white,
-                      fontWeight:
-                          selected ? FontWeight.bold : FontWeight.normal,
-                      fontFamily: 'monospace',
+                      fontFamily: '8-bit-limit',
+                      fontSize: 72,
+                      color: Colors.red,
+                      letterSpacing: 4,
                     ),
                   ),
-                );
-              }),
+                ),
+                ...List.generate(options.length, (i) {
+                  final selected = i == selectedIndex;
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      '${selected ? '▶' : '  '} ${options[i]}',
+                      style: TextStyle(
+                        fontSize: 36,
+                        color: Colors.white,
+                        fontWeight:
+                            selected ? FontWeight.bold : FontWeight.normal,
+                        fontFamily: 'Ithica',
+                        decoration:
+                            selected
+                                ? TextDecoration.underline
+                                : TextDecoration.none,
+                      ),
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
         ),
       ],
     );
   }
+
+  //   if (!isReady) {
+  //     return const Material(
+  //       color: Colors.black,
+  //       child: Center(child: CircularProgressIndicator()),
+  //     );
+  //   }
+
+  //   return Stack(
+  //     children: [
+  //       Material(
+  //         color: Colors.black,
+  //         child: Center(
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: List.generate(options.length, (i) {
+  //               final selected = i == selectedIndex;
+  //               return Padding(
+  //                 padding: const EdgeInsets.all(8.0),
+  //                 child: Text(
+  //                   '${selected ? '▶' : '  '} ${options[i]}',
+  //                   style: TextStyle(
+  //                     fontSize: 24,
+  //                     color: selected ? Colors.amber : Colors.white,
+  //                     fontWeight:
+  //                         selected ? FontWeight.bold : FontWeight.normal,
+  //                     fontFamily: 'monospace',
+  //                   ),
+  //                 ),
+  //               );
+  //             }),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }

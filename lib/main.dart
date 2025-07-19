@@ -247,51 +247,46 @@ class TrustFall extends FlameGame
         if (label == pause || label == "P" || label == 'Key P') {
           togglePause();
         }
-
-        if ((label == battle || label == 'B' || label == 'Key B') &&
-            !inBattle) {
-          startBattle(
-            [
-              player as BattleCharacter,
-              ...(player.currentParty
-                  .where((c) => c.name != player.name)
-                  .toList()),
-            ],
-
-            Enemy(
-              name: 'Hmmmmmm',
-              level: 2,
-              stats: CharacterStats(
-                charClass: CharacterClass.balanced,
-                maxHp: 60,
-                strength: 1,
-              ),
-              attacks: [
-                Attack(name: 'Punch', type: AttackType.physical, power: 0.03),
-              ],
-            ),
-          );
-        }
       }
 
       player.handleTouchInput(label, isPressed);
     }
   }
 
+  // void showDialogue(
+  //   List<String> lines, {
+  //   required List<String> choices,
+  //   required void Function(String choice) onChoiceSelected,
+  // }) {
+  //   overlays.add('TextBox');
+
+  //   // Delay to ensure overlay is mounted
+  //   Future.delayed(Duration(milliseconds: 50), () {
+  //     final textBoxState = textBoxKey.currentState;
+  //     textBoxState?.startDialogue(
+  //       lines,
+  //       choices: choices,
+  //       onChoiceSelected: onChoiceSelected,
+  //     );
+  //   });
+  // }
+
   void showDialogue(
     List<String> lines, {
-    required List<String> choices,
-    required void Function(String choice) onChoiceSelected,
+    List<String>? choices,
+    void Function(String choice)? onChoiceSelected,
+    VoidCallback? onComplete,
   }) {
     overlays.add('TextBox');
 
     // Delay to ensure overlay is mounted
-    Future.delayed(Duration(milliseconds: 50), () {
+    Future.delayed(const Duration(milliseconds: 50), () {
       final textBoxState = textBoxKey.currentState;
       textBoxState?.startDialogue(
         lines,
         choices: choices,
         onChoiceSelected: onChoiceSelected,
+        onComplete: onComplete,
       );
     });
   }

@@ -16,19 +16,29 @@ class TrustFallTextBoxState extends State<TrustFallTextBox> {
   void Function(String choice)? onChoiceSelected;
   int currentLine = 0;
   int selectedChoiceIndex = 0;
+  VoidCallback? onComplete;
 
   void startDialogue(
     List<String> newLines, {
-    required List<String> choices,
-    required void Function(String choice) onChoiceSelected,
+    List<String>? choices,
+    void Function(String choice)? onChoiceSelected,
+    VoidCallback? onComplete,
   }) {
     setState(() {
       lines = newLines;
-      this.choices = choices;
+      this.choices = choices ?? [];
       this.onChoiceSelected = onChoiceSelected;
+      this.onComplete = onComplete;
       currentLine = 0;
       selectedChoiceIndex = 0;
     });
+
+    // if (autoAdvance) {
+    //   // Wait just a moment, then close the dialogue and trigger onComplete
+    //   Future.delayed(const Duration(milliseconds: 1500), () {
+    //     if (mounted) _close();
+    //   });
+    // }
   }
 
   void _next() {
@@ -40,10 +50,12 @@ class TrustFallTextBoxState extends State<TrustFallTextBox> {
   }
 
   void _close() {
+    onComplete?.call();
     setState(() {
       lines = [];
       choices = [];
       onChoiceSelected = null;
+      onComplete = null;
       selectedChoiceIndex = 0;
     });
 
