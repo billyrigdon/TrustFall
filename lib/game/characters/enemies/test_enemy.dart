@@ -44,7 +44,7 @@ class Enemy extends SpriteComponent with HasGameRef implements BattleCharacter {
   Widget get imageWidget => Image.asset(
     'assets/images/$spriteAsset',
     // scale: -10,
-    fit: BoxFit.fitHeight,
+    fit: BoxFit.contain,
     width: Platform.isAndroid ? 64 : 256,
     height: Platform.isAndroid ? 64 : 256,
   );

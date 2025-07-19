@@ -112,7 +112,7 @@ class TrustFallTextBoxState extends State<TrustFallTextBox> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.85),
-            borderRadius: BorderRadius.circular(12),
+            // borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.white),
           ),
           child: Column(
@@ -120,7 +120,11 @@ class TrustFallTextBoxState extends State<TrustFallTextBox> {
             children: [
               Text(
                 lines[currentLine],
-                style: const TextStyle(color: Colors.white, fontSize: 16),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontFamily: 'Ithica',
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -130,17 +134,31 @@ class TrustFallTextBoxState extends State<TrustFallTextBox> {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            isSelected ? Colors.white : Colors.grey[800],
-                        foregroundColor:
-                            isSelected ? Colors.black : Colors.white,
+                      style: ButtonStyle(
+                        backgroundColor: MaterialStateProperty.all(
+                          Colors.transparent,
+                        ),
+                        foregroundColor: MaterialStateProperty.all(
+                          Colors.transparent,
+                        ),
+                        elevation: MaterialStateProperty.all(0.0),
                       ),
                       onPressed: () {
                         onChoiceSelected?.call(choices[index]);
                         _close();
                       },
-                      child: Text(choices[index]),
+                      child: Text(
+                        choices[index],
+                        style: TextStyle(
+                          fontFamily: 'Ithica',
+                          fontSize: 24,
+                          color: Colors.white,
+                          decoration:
+                              isSelected
+                                  ? TextDecoration.underline
+                                  : TextDecoration.none,
+                        ),
+                      ),
                     ),
                   );
                 }),
@@ -149,7 +167,10 @@ class TrustFallTextBoxState extends State<TrustFallTextBox> {
                   onPressed: _next,
                   child: const Text(
                     'Next',
-                    style: TextStyle(color: Colors.white70),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontFamily: 'Ithica',
+                    ),
                   ),
                 ),
             ],

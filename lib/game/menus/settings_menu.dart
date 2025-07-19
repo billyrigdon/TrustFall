@@ -147,6 +147,7 @@ class SettingsMenuState extends State<SettingsMenu> {
       setState(() {
         useDpad = !useDpad;
         service.useDpad = useDpad;
+        settings.setUseDpad(useDpad);
       });
       return;
     }
