@@ -140,6 +140,7 @@ class TrustFall extends FlameGame
     overlays.remove('TouchControls');
     player.moveDirection = Vector2.zero();
     keyboardListenerKey.currentState?.clearHeldInputs();
+    player.clearInputs();
     inBattle = true;
     overlays.add('BattleOverlay');
     keyboardListenerKey.currentState?.regainFocus();
@@ -168,7 +169,7 @@ class TrustFall extends FlameGame
   Future<void> onLoad() async {
     player = MainPlayer();
     final prefs = await SharedPreferences.getInstance();
-    prefs.clear();
+    // prefs.clear();
     final loader = prefs.getString('currentLoader') ?? 'mainPlayerHouse';
 
     switch (loader) {
@@ -270,7 +271,10 @@ class TrustFall extends FlameGame
     overlays.remove('TouchControls');
     isPaused = !isPaused;
     if (isPaused) {
+      keyboardListenerKey.currentState?.clearHeldInputs();
+      player.clearInputs();
       overlays.add('PauseMenu');
+      keyboardListenerKey.currentState?.regainFocus();
     } else {
       overlays.remove('PauseMenu');
     }

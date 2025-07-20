@@ -58,7 +58,6 @@ class BattleManager extends ChangeNotifier {
           1 +
           (Random().nextDouble() * attack.statusDurationVariance * 2 -
               attack.statusDurationVariance);
-      // example: 1 ± 0.5 = range of 0.5 to 1.5
 
       final randomizedDuration = (attack.statusDuration! * randomMultiplier)
           .round()
@@ -68,12 +67,8 @@ class BattleManager extends ChangeNotifier {
         BattleStatus(type: attack.statusEffect!, duration: randomizedDuration),
       );
       await showMessage(
-        '${enemy.name} is now ${attack.statusEffect.toString().split('.').last} ($randomizedDuration turns)!',
+        '${enemy.name} is now ${attack.statusEffect.toString().split('.').last}!',
       );
-
-      // await showMessage(
-      // '${enemy.name} is now ${attack.statusEffect.toString().split('.').last}!',
-      // );
     }
 
     if (!enemy.isAlive) {
@@ -247,7 +242,7 @@ class BattleManager extends ChangeNotifier {
   ) async {
     if (!playerTurn || battleEnded || !actor.isAlive) return;
 
-    final damage = item.damage ?? 0;
+    final damage = item.damage;
     enemy.takeDamage(damage.toInt());
 
     await showMessage('${actor.name} threw ${item.name} and dealt $damage!');

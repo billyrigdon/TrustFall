@@ -65,7 +65,10 @@ class KeyboardGamepadListenerState extends State<KeyboardGamepadListener> {
     _pollingTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
       final now = DateTime.now();
 
-      for (final input in _currentlyHeldInputs) {
+      // FIX: make a snapshot to avoid concurrent modification
+      final heldSnapshot = _currentlyHeldInputs.toList();
+
+      for (final input in heldSnapshot) {
         final start = _inputHoldStart[input] ?? now;
         final last =
             _lastRepeat[input] ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -159,9 +162,11 @@ class KeyboardGamepadListenerState extends State<KeyboardGamepadListener> {
   }
 
   void clearHeldInputs() {
-    for (final input in _currentlyHeldInputs) {
-      widget.onInput(input, false); // force-release
+    final heldCopy = Set<String>.from(_currentlyHeldInputs);
+    for (final input in heldCopy) {
+      widget.onInput(input, false); // safe now
     }
+
     _currentlyHeldInputs.clear();
     _inputHoldStart.clear();
     _lastRepeat.clear();

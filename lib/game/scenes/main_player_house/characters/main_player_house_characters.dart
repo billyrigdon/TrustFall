@@ -14,6 +14,8 @@ class MainPlayerHouseCharacters {
       'dude': getDude(),
       'mph_mom': getMom(),
       'mph_ant': getAnt(),
+      'mph_brother': getBrother(),
+      'mph_sister': getSister(),
     };
   }
 
@@ -77,6 +79,7 @@ class MainPlayerHouseCharacters {
       if (gameRef.dialogOpen) return;
       gameRef.dialogOpen = true;
       gameRef.showDialogue(
+        onComplete: () => gameRef.dialogOpen = false,
         worldPosition: mom.position,
         [
           'Can you go check on your father?',
@@ -87,6 +90,40 @@ class MainPlayerHouseCharacters {
       );
     };
     return mom;
+  }
+
+  PartyMember? getBrother() {
+    PartyMember brother =
+        MainPlayerHouseCharacterDefinitions.get('mph_brother') as PartyMember;
+    brother.onInteract = () {
+      if (gameRef.dialogOpen) return;
+      gameRef.dialogOpen = true;
+      gameRef.showDialogue(
+        onComplete: () => gameRef.dialogOpen = false,
+        worldPosition: brother.position,
+        ['Were going to pop!!', 'and grabbing a burger'],
+        // choices: ['Yes', 'No'],
+        // onChoiceSelected: (choice) {},
+      );
+    };
+    return brother;
+  }
+
+  PartyMember? getSister() {
+    PartyMember sister =
+        MainPlayerHouseCharacterDefinitions.get('mph_sister') as PartyMember;
+    sister.onInteract = () {
+      if (gameRef.dialogOpen) return;
+      gameRef.dialogOpen = true;
+      gameRef.showDialogue(
+        onComplete: () => gameRef.dialogOpen = false,
+        worldPosition: sister.position,
+        ['I want a butterscotch soda!!'],
+        // choices: ['Yes', 'No'],
+        // onChoiceSelected: (choice) {},
+      );
+    };
+    return sister;
   }
 
   Enemy? getAnt() {

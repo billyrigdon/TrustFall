@@ -68,6 +68,36 @@ abstract class MainPlayerHouseCharacterDefinitions {
       attacks: [Attack(name: 'Punch', type: AttackType.physical, power: 2)],
       bank: [Attack(name: 'Lie', type: AttackType.mental, cost: 10, power: 2)],
     ),
+    'mph_brother': PartyMember(
+      characterId: 'mph_brother',
+      name: 'Brother',
+      level: 2,
+      spriteAsset: 'main_player_brother.png',
+      stats: CharacterStats(
+        charClass: CharacterClass.balanced,
+        maxHp: 45,
+        maxMP: 45,
+        strength: 1,
+        speed: 1,
+      ),
+      attacks: [Attack(name: 'Punch', type: AttackType.physical, power: 2)],
+      bank: [Attack(name: 'Lie', type: AttackType.mental, cost: 10, power: 2)],
+    ),
+    'mph_sister': PartyMember(
+      characterId: 'mph_sister',
+      name: 'Sister',
+      level: 2,
+      spriteAsset: 'main_player_sister.png',
+      stats: CharacterStats(
+        charClass: CharacterClass.balanced,
+        maxHp: 45,
+        maxMP: 45,
+        strength: 1,
+        speed: 1,
+      ),
+      attacks: [Attack(name: 'Punch', type: AttackType.physical, power: 2)],
+      bank: [Attack(name: 'Lie', type: AttackType.mental, cost: 10, power: 2)],
+    ),
   };
 
   static BattleCharacter get(String id) => characters[id]!;

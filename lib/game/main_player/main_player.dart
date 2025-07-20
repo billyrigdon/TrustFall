@@ -63,6 +63,10 @@ class MainPlayer extends SpriteAnimationComponent
 
   MainPlayer() : super(size: Vector2(30, 60), anchor: Anchor.topLeft);
 
+  void clearInputs() {
+    _activeInputs.clear();
+  }
+
   Future<void> _loadHPFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     currentHP = prefs.getInt('$name-hp') ?? stats.maxHp.toInt();
@@ -99,7 +103,7 @@ class MainPlayer extends SpriteAnimationComponent
     );
 
     idleRight = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_player_1.png'),
+      await gameRef.loadSprite('main_player_idle_right.png'),
     ], stepTime: 1.0);
 
     idleUp = SpriteAnimation.spriteList([
@@ -111,7 +115,7 @@ class MainPlayer extends SpriteAnimationComponent
     ], stepTime: 1.0);
 
     idleLeft = SpriteAnimation.spriteList([
-      await gameRef.loadSprite('main_player_left_1.png'),
+      await gameRef.loadSprite('main_player_idle_left.png'),
     ], stepTime: 1.0);
 
     walkRight = SpriteAnimation.spriteList([

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="15" height="8" tilewidth="32" tileheight="32" infinite="0" nextlayerid="17" nextobjectid="36">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="15" height="8" tilewidth="32" tileheight="32" infinite="0" nextlayerid="17" nextobjectid="40">
  <tileset firstgid="1" source="Room_Builder_free_32x32.tsx"/>
  <tileset firstgid="392" source="Interiors_free_32x32.tsx"/>
  <layer id="7" name="Floor" width="15" height="8">
@@ -183,6 +183,25 @@
     <property name="fromRoom" value="hallway_2"/>
     <property name="spawn" type="bool" value="true"/>
     <property name="special_spawn" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="36" x="46.4864" y="80.2444" width="37.6319" height="27.1171"/>
+  <object id="37" x="331.492" y="86.8853" width="35.4182" height="28.7773">
+   <properties>
+    <property name="characterId" value="mph_sister"/>
+    <property name="level" value="1"/>
+    <property name="name" value="Sister"/>
+    <property name="spriteAsset" value="main_player_sister.png"/>
+    <property name="type" value="party_member"/>
+   </properties>
+  </object>
+  <object id="38" x="263.423" y="84.6717" width="35.4182" height="28.7773">
+   <properties>
+    <property name="characterId" value="mph_brother"/>
+    <property name="level" value="1"/>
+    <property name="name" value="Brother"/>
+    <property name="spriteAsset" value="main_player_brother.png"/>
+    <property name="type" value="party_member"/>
    </properties>
   </object>
  </objectgroup>
