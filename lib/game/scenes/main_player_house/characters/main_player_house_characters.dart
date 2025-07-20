@@ -9,11 +9,16 @@ class MainPlayerHouseCharacters {
 
   MainPlayerHouseCharacters({required this.gameRef});
   getCharacters() {
-    return {'ghost': getGhost(), 'dude': getDude(), 'mph_mom': getMom()};
+    return {
+      'ghost': getGhost(),
+      'dude': getDude(),
+      'mph_mom': getMom(),
+      'mph_ant': getAnt(),
+    };
   }
 
   getCharacter(String id) {
-    print('getting character $id');
+    // print('getting character $id');
     return getCharacters()[id];
   }
 
@@ -82,5 +87,11 @@ class MainPlayerHouseCharacters {
       );
     };
     return mom;
+  }
+
+  Enemy? getAnt() {
+    Enemy ant = MainPlayerHouseCharacterDefinitions.get('mph_ant') as Enemy;
+    ant.onInteract = () {};
+    return ant;
   }
 }

@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flame/experimental.dart';
 import 'package:flame/game.dart';
 import 'package:flame_tiled/flame_tiled.dart';
+import 'package:game/game/scenes/main_player_house/characters/ant_battle_trigger_zone.dart';
 import 'package:game/game/scenes/main_player_house/characters/main_player_house_characters.dart';
 import 'package:game/game/main_player/main_player.dart';
 import 'package:game/main.dart';
@@ -133,6 +135,23 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     }
   }
 
+  void _addCollisions(TiledComponent map) {
+    final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
+    if (objectGroup == null) return;
+
+    for (final obj in objectGroup.objects) {
+      final isCollidable = obj.properties.any(
+        (p) => p.name == 'collidable' && p.value == true,
+      );
+
+      if (isCollidable) {
+        final pos = Vector2(obj.x, obj.y);
+        final size = Vector2(obj.width, obj.height);
+        gameRef.world.add(Wall(pos, size));
+      }
+    }
+  }
+
   Future<void> _loadRoom(
     MainPlayerHouseRoom room, {
     required Vector2 previousPosition,
@@ -236,6 +255,19 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
         }
       }
     }
+
+    if (room == MainPlayerHouseRoom.backyard) {
+      final rng = Random();
+      for (int i = 0; i < 3; i++) {
+        final pos = Vector2(
+          rng.nextDouble() * (mapPixelSize.x - 64),
+          rng.nextDouble() * (mapPixelSize.y - 64),
+        );
+
+        world.add(AntBattleTriggerZone(pos, Vector2.all(64)));
+      }
+    }
+
     _addCollisions(map);
 
     late final Vector2 spawn;
@@ -264,22 +296,5 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     newPlayer.lastDirection = lastDirection;
     gameRef.player = newPlayer;
     world.add(newPlayer);
-  }
-
-  void _addCollisions(TiledComponent map) {
-    final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
-    if (objectGroup == null) return;
-
-    for (final obj in objectGroup.objects) {
-      final isCollidable = obj.properties.any(
-        (p) => p.name == 'collidable' && p.value == true,
-      );
-
-      if (isCollidable) {
-        final pos = Vector2(obj.x, obj.y);
-        final size = Vector2(obj.width, obj.height);
-        gameRef.world.add(Wall(pos, size));
-      }
-    }
   }
 }

@@ -158,6 +158,16 @@ class KeyboardGamepadListenerState extends State<KeyboardGamepadListener> {
     }
   }
 
+  void clearHeldInputs() {
+    for (final input in _currentlyHeldInputs) {
+      widget.onInput(input, false); // force-release
+    }
+    _currentlyHeldInputs.clear();
+    _inputHoldStart.clear();
+    _lastRepeat.clear();
+    _firedOnce.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Focus(focusNode: _focusNode, child: const SizedBox.shrink());

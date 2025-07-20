@@ -53,6 +53,21 @@ abstract class MainPlayerHouseCharacterDefinitions {
       attacks: [Attack(name: 'Punch', type: AttackType.physical, power: 2)],
       bank: [Attack(name: 'Lie', type: AttackType.mental, cost: 10, power: 2)],
     ),
+    'mph_ant': Enemy(
+      characterId: 'mph_ant',
+      name: 'Ant',
+      level: 2,
+      spriteAsset: 'mom.png',
+      stats: CharacterStats(
+        charClass: CharacterClass.balanced,
+        maxHp: 45,
+        maxMP: 45,
+        strength: 1,
+        speed: 1,
+      ),
+      attacks: [Attack(name: 'Punch', type: AttackType.physical, power: 2)],
+      bank: [Attack(name: 'Lie', type: AttackType.mental, cost: 10, power: 2)],
+    ),
   };
 
   static BattleCharacter get(String id) => characters[id]!;

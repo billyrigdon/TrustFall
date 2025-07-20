@@ -182,7 +182,7 @@ class MainPlayer extends SpriteAnimationComponent
     await loadAttacks();
     await loadBank();
     await loadParty();
-    handleMoving(1);
+    // handleMoving(1);
   }
 
   List<Attack> _defaultAttacks() => [
@@ -365,6 +365,12 @@ class MainPlayer extends SpriteAnimationComponent
   @override
   void update(double dt) {
     super.update(dt);
+
+    if (gameRef.inBattle) {
+      moveDirection = Vector2.zero();
+      return;
+    }
+
     handleMoving(dt);
     // print(dt);
   }

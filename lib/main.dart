@@ -138,6 +138,8 @@ class TrustFall extends FlameGame
 
     currentEnemy = enemy;
     overlays.remove('TouchControls');
+    player.moveDirection = Vector2.zero();
+    keyboardListenerKey.currentState?.clearHeldInputs();
     inBattle = true;
     overlays.add('BattleOverlay');
     keyboardListenerKey.currentState?.regainFocus();
@@ -154,6 +156,8 @@ class TrustFall extends FlameGame
 
   void endBattle() {
     inBattle = false;
+    player.moveDirection = Vector2.zero();
+    keyboardListenerKey.currentState?.clearHeldInputs();
     overlays.remove('BattleOverlay');
     keyboardListenerKey.currentState?.regainFocus();
 
