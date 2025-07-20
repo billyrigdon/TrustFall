@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:game/game/characters/enemies/enemy.dart';
+import 'package:game/models/enemy.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/models/equipment.dart';
 import 'package:game/models/party_member.dart';
@@ -603,23 +603,7 @@ class MainPlayer extends SpriteAnimationComponent
     saveParty();
   }
 
-  // void interact() {
-  //   print('interacting');
-  //   final nearbyEnemy = gameRef.world.children.whereType<Enemy?>().firstWhere(
-  //     (enemy) => enemy!.toRect().inflate(10).overlaps(toRect()),
-  //     orElse: () => null,
-  //   );
-
-  //   if (nearbyEnemy != null) {
-  //     nearbyEnemy.onInteract?.call();
-  //   } else {
-  //     print('No nearby enemy found');
-  //   }
-  // }
-
   void interact() {
-    print('interacting');
-
     final nearbyEnemy = gameRef.world.children.whereType<Enemy?>().firstWhere(
       (enemy) => enemy!.toRect().inflate(10).overlaps(toRect()),
       orElse: () => null,

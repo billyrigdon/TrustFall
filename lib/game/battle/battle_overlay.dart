@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:game/game/battle/battle_action.dart';
 import 'package:game/game/battle/battle_manager.dart';
 import 'package:game/models/battle_character.dart';
-import 'package:game/game/characters/enemies/enemy.dart' as game_enemy;
-import 'package:game/game/characters/main_player.dart';
+import 'package:game/models/enemy.dart' as game_enemy;
+import 'package:game/game/main_player/main_player.dart';
 import 'package:game/models/items.dart';
 import 'package:game/main.dart';
 import 'package:game/services/settings_service.dart';
@@ -36,18 +38,16 @@ class BattleOverlayState extends State<BattleOverlay> {
   int attackIndex = 0;
   int bankIndex = 0;
   int turnIndex = 0;
+  List<BattleAction> playerActions = [];
+
   final SettingsService settings = SettingsService();
   List<String> queuedMessages = [];
+  // bool didEnemyAttack = false;
 
   String? modalMessage;
   Completer<void>? _modalCompleter;
 
   List<String> commands = ['Attack', 'Bank', 'Run'];
-
-  // List<Item> get mainInventory {
-  //   final main = battleManager.party.firstWhere((c) => c is MainPlayer);
-  //   return main.inventory;
-  // }
 
   List<Item> get mainInventory {
     final main = battleManager.party.firstWhere((c) => c is MainPlayer);
@@ -200,353 +200,212 @@ class BattleOverlayState extends State<BattleOverlay> {
     }
   }
 
+  // void _handleSelection() async {
+  //   final currentChar = battleManager.party[turnIndex];
+
+  //   if (itemMenuOpen) {
+  //     final item = mainInventory[selectedIndex];
+
+  //     await battleManager.useItemOn(currentChar, item, showMessage);
+
+  //     setState(() {
+  //       itemMenuOpen = false;
+  //       selectedIndex = 0;
+  //       if (mainInventory.isEmpty) {
+  //         commands = ['Attack', 'Run'];
+  //       }
+  //     });
+
+  //     await _endTurn();
+  //   } else if (attackMenuOpen) {
+  //     final attack = currentChar.attacks[attackIndex];
+  //     await battleManager.attackEnemy(currentChar, attack, showMessage);
+
+  //     setState(() {
+  //       attackMenuOpen = false;
+  //       attackIndex = 0;
+  //     });
+
+  //     await _endTurn();
+  //   } else if (bankMenuOpen) {
+  //     final bankMove = currentChar.bank[bankIndex];
+  //     await battleManager.mentallyAttackEnemy(
+  //       currentChar,
+  //       bankMove,
+  //       showMessage,
+  //     );
+
+  //     setState(() {
+  //       bankMenuOpen = false;
+  //       bankIndex = 0;
+  //     });
+
+  //     await _endTurn();
+  //   } else {
+  //     switch (commands[selectedIndex]) {
+  //       case 'Attack':
+  //         setState(() {
+  //           attackMenuOpen = true;
+  //           attackIndex = 0;
+  //         });
+  //         break;
+  //       case 'Bank':
+  //         setState(() {
+  //           bankMenuOpen = true;
+  //           bankIndex = 0;
+  //         });
+  //         break;
+  //       case 'Items':
+  //         setState(() {
+  //           itemMenuOpen = true;
+  //           selectedIndex = 0;
+  //         });
+  //         break;
+  //       case 'Run':
+  //         setState(() {
+  //           attackMenuOpen = false;
+  //           itemMenuOpen = false;
+  //           selectedIndex = 0;
+  //         });
+
+  //         await showMessage(
+  //           '${currentChar.name} ran away!',
+  //           requireConfirmation: true,
+  //         );
+  //         battleManager.battleEnded = true;
+
+  //         if (mounted)
+  //           widget.game
+  //               .endBattle(); // optional: delay this if you want confirmation
+  //         return; // ✅ Early return to prevent continuing
+  //     }
+  //   }
+  // }
+
+  Future<void> _resolveTurn() async {
+    // Collect enemy action
+    final enemy = battleManager.enemy;
+    final randomAttack = enemy.attacks[Random().nextInt(enemy.attacks.length)];
+    final target =
+        battleManager.party.where((c) => c.isAlive).toList()..shuffle();
+    if (target.isNotEmpty) {
+      battleManager.pendingActions.add(
+        BattleAction(
+          actor: enemy,
+          type: ActionType.attack,
+          attack: randomAttack,
+        ),
+      );
+    }
+
+    // Merge and sort by speed
+    final allActions = [...playerActions, ...battleManager.pendingActions]
+      ..sort((a, b) => b.speed.compareTo(a.speed)); // higher speed first
+
+    for (final action in allActions) {
+      if (!action.actor.isAlive) continue;
+
+      switch (action.type) {
+        case ActionType.attack:
+          await battleManager.attackEnemy(
+            action.actor,
+            action.attack!,
+            showMessage,
+          );
+          break;
+        case ActionType.bank:
+          await battleManager.mentallyAttackEnemy(
+            action.actor,
+            action.attack!,
+            showMessage,
+          );
+          break;
+        case ActionType.item:
+          await battleManager.useItemOn(
+            action.actor,
+            action.item!,
+            showMessage,
+          );
+          break;
+        case ActionType.run:
+          // Handle run early?
+          break;
+      }
+
+      if (battleManager.battleEnded) break;
+    }
+
+    playerActions.clear();
+    battleManager.pendingActions.clear();
+    battleManager.playerTurn = true;
+  }
+
   void _handleSelection() async {
     final currentChar = battleManager.party[turnIndex];
 
     if (itemMenuOpen) {
       final item = mainInventory[selectedIndex];
-
-      await battleManager.useItemOn(currentChar, item, showMessage);
-
-      setState(() {
-        itemMenuOpen = false;
-        selectedIndex = 0;
-        if (mainInventory.isEmpty) {
-          commands = ['Attack', 'Run'];
-        }
-      });
-
-      await _endTurn();
+      playerActions.add(
+        BattleAction(actor: currentChar, type: ActionType.item, item: item),
+      );
     } else if (attackMenuOpen) {
       final attack = currentChar.attacks[attackIndex];
-      await battleManager.attackEnemy(currentChar, attack, showMessage);
-
-      setState(() {
-        attackMenuOpen = false;
-        attackIndex = 0;
-      });
-
-      await _endTurn();
+      playerActions.add(
+        BattleAction(
+          actor: currentChar,
+          type: ActionType.attack,
+          attack: attack,
+        ),
+      );
     } else if (bankMenuOpen) {
       final bankMove = currentChar.bank[bankIndex];
-      await battleManager.mentallyAttackEnemy(
-        currentChar,
-        bankMove,
-        showMessage,
+      playerActions.add(
+        BattleAction(
+          actor: currentChar,
+          type: ActionType.bank,
+          attack: bankMove,
+        ),
       );
-
-      setState(() {
-        bankMenuOpen = false;
-        bankIndex = 0;
-      });
-
-      await _endTurn();
     } else {
       switch (commands[selectedIndex]) {
         case 'Attack':
-          setState(() {
-            attackMenuOpen = true;
-            attackIndex = 0;
-          });
-          break;
+          setState(() => attackMenuOpen = true);
+          return;
         case 'Bank':
-          setState(() {
-            bankMenuOpen = true;
-            bankIndex = 0;
-          });
-          break;
+          setState(() => bankMenuOpen = true);
+          return;
         case 'Items':
-          setState(() {
-            itemMenuOpen = true;
-            selectedIndex = 0;
-          });
-          break;
+          setState(() => itemMenuOpen = true);
+          return;
         case 'Run':
-          setState(() {
-            attackMenuOpen = false;
-            itemMenuOpen = false;
-            selectedIndex = 0;
-          });
-
           await showMessage(
             '${currentChar.name} ran away!',
             requireConfirmation: true,
           );
           battleManager.battleEnded = true;
-
-          if (mounted)
-            widget.game
-                .endBattle(); // optional: delay this if you want confirmation
-          return; // ✅ Early return to prevent continuing
+          if (mounted) widget.game.endBattle();
+          return;
       }
     }
-  }
 
-  Future<void> _endTurn() async {
+    // Reset UI state
+    setState(() {
+      itemMenuOpen = false;
+      attackMenuOpen = false;
+      bankMenuOpen = false;
+      selectedIndex = 0;
+      attackIndex = 0;
+      bankIndex = 0;
+    });
+
+    // Next party member
     turnIndex++;
+
+    // Done selecting all actions?
     if (turnIndex >= battleManager.party.length) {
       turnIndex = 0;
-      battleManager.playerTurn = false;
-
-      if (battleManager.battleEnded) {
-        if (mounted) widget.game.endBattle();
-      }
-
-      if (turnIndex == 0) await battleManager.enemyAttack(showMessage);
+      await _resolveTurn();
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black,
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          const SizedBox(height: 32),
-          Padding(
-            padding: const EdgeInsets.only(top: 16.0),
-            child: HealthBar(
-              hp: battleManager.enemy.currentHP,
-              maxHp: battleManager.enemy.stats.maxHp.toInt(),
-              label:
-                  '${battleManager.enemy.name} (Lvl ${battleManager.enemy.level})',
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // 🔥 Enemy image scales to fit available space
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: FittedBox(
-                fit: BoxFit.contain,
-                child: widget.enemy.imageWidget,
-              ),
-            ),
-          ),
-
-          // 🔥 Message section
-          Flexible(
-            flex: 1,
-            child: SizedBox(
-              height: 120,
-              child:
-                  modalMessage != null
-                      ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            modalMessage!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontFamily: 'Ithica',
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 4),
-                          // if (_modalCompleter != null &&
-                          // !_modalCompleter!.isCompleted)
-                          // const Text(
-                          // 'Press Action to continue',
-                          // style: TextStyle(
-                          // color: Colors.white70,
-                          // fontFamily: 'Ithica',
-                          // fontSize: 16,
-                          // ),
-                          // ),
-                        ],
-                      )
-                      : const SizedBox(),
-            ),
-          ),
-
-          // 🔥 Party row
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(vertical: 8),
-          //   child: Wrap(
-          //     alignment: WrapAlignment.center,
-          //     spacing: 8,
-          //     children:
-          //         battleManager.party.map((member) {
-          //           return SizedBox(
-          //             width: 100,
-          //             child: HealthBar(
-          //               hp: member.currentHP,
-          //               maxHp: member.stats.maxHp.toInt(),
-          //               label: member.name,
-          //             ),
-          //           );
-          //         }).toList(),
-          //   ),
-          // ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              children:
-                  battleManager.party.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final member = entry.value;
-                    final isActive = i == turnIndex;
-
-                    return SizedBox(
-                      width: 100,
-                      child: Column(
-                        children: [
-                          HealthBar(
-                            hp: member.currentHP,
-                            maxHp: member.stats.maxHp.toInt(),
-                            label: member.name,
-                            isActive: isActive,
-                          ),
-                          MentalPowerBar(
-                            mp: member.currentMP,
-                            maxMP: member.stats.maxMP.toInt(),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-            ),
-          ),
-
-          // Text(
-          //   'Turn: ${battleManager.party[turnIndex].name}',
-          //   style: const TextStyle(color: Colors.white70, fontFamily: 'Ithica'),
-          // ),
-          const SizedBox(height: 12),
-
-          // 🔥 Battle menu (let it wrap if needed)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child:
-                attackMenuOpen
-                    ? _buildAttackMenu()
-                    : bankMenuOpen
-                    ? _buildBankMenu()
-                    : itemMenuOpen
-                    ? _buildItemMenu()
-                    : _buildMainMenu(),
-          ),
-
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-
-    //   return Material(
-    //     color: Colors.black.withOpacity(0.95),
-    //     child: Center(
-    //       child: AnimatedBuilder(
-    //         animation: battleManager,
-    //         builder: (_, __) {
-    //           return Column(
-    //             children: [
-    //               SizedBox(height: 32),
-    //               Padding(
-    //                 padding: const EdgeInsets.only(top: 32.0),
-    //                 child: Column(
-    //                   children: [
-    //                     HealthBar(
-    //                       hp: battleManager.enemy.currentHP,
-    //                       maxHp: battleManager.enemy.stats.maxHp.toInt(),
-    //                       label:
-    //                           '${battleManager.enemy.name} (Lvl ${battleManager.enemy.level})',
-    //                     ),
-    //                     const SizedBox(height: 48),
-    //                     widget.enemy.imageWidget,
-    //                   ],
-    //                 ),
-    //               ),
-    //               if (modalMessage != null)
-    //                 SizedBox(
-    //                   height: 120,
-    //                   child: Column(
-    //                     mainAxisSize: MainAxisSize.min,
-    //                     children: [
-    //                       Text(
-    //                         modalMessage!,
-    //                         style: const TextStyle(
-    //                           color: Colors.white,
-    //                           fontSize: 22,
-    //                           fontFamily: 'Ithica',
-    //                         ),
-    //                         textAlign: TextAlign.center,
-    //                       ),
-    //                       const SizedBox(height: 4),
-    //                       if (_modalCompleter != null &&
-    //                           !_modalCompleter!.isCompleted)
-    //                         const Text(
-    //                           'Press Action to continue',
-    //                           style: TextStyle(
-    //                             color: Colors.white70,
-    //                             fontFamily: 'Ithica',
-    //                             fontSize: 16,
-    //                           ),
-    //                         ),
-    //                     ],
-    //                   ),
-    //                 )
-    //               else
-    //                 SizedBox(height: 120),
-    //               // Party Health Bars in a row
-    //               Row(
-    //                 mainAxisAlignment: MainAxisAlignment.center,
-    //                 children:
-    //                     battleManager.party.map((member) {
-    //                       return Padding(
-    //                         padding: const EdgeInsets.symmetric(horizontal: 4),
-    //                         child: SizedBox(
-    //                           width: 100,
-    //                           child: HealthBar(
-    //                             hp: member.currentHP,
-    //                             maxHp: member.stats.maxHp.toInt(),
-    //                             label: member.name,
-    //                           ),
-    //                         ),
-    //                       );
-    //                     }).toList(),
-    //               ),
-
-    //               // const SizedBox(height: 16),
-    //               Text(
-    //                 'Turn: ${battleManager.party[turnIndex].name}',
-    //                 style: const TextStyle(
-    //                   color: Colors.white70,
-    //                   fontFamily: 'Ithica',
-    //                 ),
-    //               ),
-
-    //               const SizedBox(height: 12),
-    //               // SizedBox(
-    //               // height: 150,
-    //               Container(
-    //                 // margin: const EdgeInsets.only(top: 16),
-    //                 padding: const EdgeInsets.all(8),
-    //                 // decoration: BoxDecoration(
-    //                 // color: Colors.black,
-    //                 // border: Border.all(color: Colors.white),
-    //                 // borderRadius: BorderRadius.circular(8),
-    //                 // ),
-    //                 child:
-    //                     attackMenuOpen
-    //                         ? _buildAttackMenu()
-    //                         : itemMenuOpen
-    //                         ? _buildItemMenu()
-    //                         : _buildMainMenu(),
-    //               ),
-
-    //               SizedBox(height: 64),
-    //             ],
-    //           );
-    //         },
-    //       ),
-    //     ),
-    //   );
   }
 
   Widget _buildAttackMenu() {
@@ -651,39 +510,6 @@ class BattleOverlayState extends State<BattleOverlay> {
     );
   }
 
-  // Widget _buildItemMenu() {
-  //   final filteredItems =
-  //       mainInventory.where((item) => item.type != ItemType.currency).toList();
-
-  //   // return Column(
-  //   // crossAxisAlignment: CrossAxisAlignment.start,
-  //   return Container(
-  //     width: double.infinity,
-  //     child: Row(
-  //       // crossAxisAlignment: CrossAxisAlignment.
-  //       mainAxisAlignment: MainAxisAlignment.center,
-  //       children: List.generate(filteredItems.length, (i) {
-  //         final selected = i == selectedIndex;
-  //         final item = filteredItems[i];
-  //         return Padding(
-  //           padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
-  //           child: Text(
-  //             '${item.name}',
-  //             style: TextStyle(
-  //               fontFamily: 'Ithica',
-  //               fontSize: 22,
-  //               color: selected ? Colors.white : Colors.white,
-  //               decoration:
-  //                   selected ? TextDecoration.underline : TextDecoration.none,
-  //               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-  //             ),
-  //           ),
-  //         );
-  //       }),
-  //     ),
-  //   );
-  // }
-
   Widget _buildMainMenu() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -709,5 +535,135 @@ class BattleOverlayState extends State<BattleOverlay> {
         );
       }),
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black,
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.only(top: 16.0),
+            child: HealthBar(
+              hp: battleManager.enemy.currentHP,
+              maxHp: battleManager.enemy.stats.maxHp.toInt(),
+              label:
+                  '${battleManager.enemy.name} (Lvl ${battleManager.enemy.level})',
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 🔥 Enemy image scales to fit available space
+          Expanded(
+            flex: 3,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: widget.enemy.imageWidget,
+              ),
+            ),
+          ),
+
+          // 🔥 Message section
+          Flexible(
+            flex: 1,
+            child: SizedBox(
+              height: 120,
+              child:
+                  modalMessage != null
+                      ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            modalMessage!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontFamily: 'Ithica',
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                      )
+                      : const SizedBox(),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              children:
+                  battleManager.party.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final member = entry.value;
+                    final isActive = i == turnIndex;
+
+                    return SizedBox(
+                      width: 100,
+                      child: Column(
+                        children: [
+                          HealthBar(
+                            hp: member.currentHP,
+                            maxHp: member.stats.maxHp.toInt(),
+                            label: member.name,
+                            isActive: isActive,
+                          ),
+                          MentalPowerBar(
+                            mp: member.currentMP,
+                            maxMP: member.stats.maxMP.toInt(),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+            ),
+          ),
+
+          // Text(
+          //   'Turn: ${battleManager.party[turnIndex].name}',
+          //   style: const TextStyle(color: Colors.white70, fontFamily: 'Ithica'),
+          // ),
+          const SizedBox(height: 12),
+
+          // 🔥 Battle menu (let it wrap if needed)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child:
+                attackMenuOpen
+                    ? _buildAttackMenu()
+                    : bankMenuOpen
+                    ? _buildBankMenu()
+                    : itemMenuOpen
+                    ? _buildItemMenu()
+                    : _buildMainMenu(),
+          ),
+
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _endTurn() async {
+    turnIndex++;
+    if (turnIndex >= battleManager.party.length) {
+      turnIndex = 0;
+      battleManager.playerTurn = false;
+
+      if (battleManager.battleEnded) {
+        if (mounted) widget.game.endBattle();
+      }
+
+      if (turnIndex == 0) {
+        await battleManager.enemyAttack(showMessage);
+      }
+    }
   }
 }

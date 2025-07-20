@@ -7,13 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:game/game/battle/battle_overlay.dart';
 import 'package:game/models/attacks.dart';
 import 'package:game/models/battle_character.dart';
-import 'package:game/game/characters/enemies/enemy.dart';
-import 'package:game/game/characters/main_player.dart';
+import 'package:game/models/enemy.dart';
+import 'package:game/game/main_player/main_player.dart';
 import 'package:game/game/menus/pause_menu.dart';
 import 'package:game/game/menus/settings_menu.dart';
 import 'package:game/game/menus/start_menu.dart';
 import 'package:game/game/scenes/main_player_house/main_player_house.dart';
-import 'package:game/game/scenes/main_player_house/main_player_house_room.dart';
+import 'package:game/game/scenes/main_player_house/rooms/main_player_house_room.dart';
 import 'package:game/models/character_stats.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:game/widgets/keyboard_gamepad_handler.dart';
@@ -183,7 +183,7 @@ class TrustFall extends FlameGame
   Future<void> onLoad() async {
     player = MainPlayer();
     final prefs = await SharedPreferences.getInstance();
-    // prefs.clear();
+    prefs.clear();
     final loader = prefs.getString('currentLoader') ?? 'mainPlayerHouse';
     // var settings = SettingsService();
     // await settings.load();

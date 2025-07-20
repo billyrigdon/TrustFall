@@ -4,17 +4,11 @@ import 'package:flame/components.dart';
 import 'package:flame/experimental.dart';
 import 'package:flame/game.dart';
 import 'package:flame_tiled/flame_tiled.dart';
-import 'package:game/game/characters/character_list.dart';
-import 'package:game/game/characters/enemies/ghost_enemy.dart';
-import 'package:game/game/characters/enemies/enemy.dart';
-import 'package:game/game/characters/main_player.dart';
+import 'package:game/game/scenes/main_player_house/characters/main_player_house_characters.dart';
+import 'package:game/game/main_player/main_player.dart';
 import 'package:game/main.dart';
-import 'package:game/game/scenes/main_player_house/main_player_house_room.dart';
-import 'package:game/models/attacks.dart';
-import 'package:game/models/battle_character.dart';
-import 'package:game/models/character_stats.dart';
+import 'package:game/game/scenes/main_player_house/rooms/main_player_house_room.dart';
 import 'package:game/models/items.dart';
-import 'package:game/models/party_member.dart';
 import 'package:game/widgets/door.dart';
 import 'package:game/widgets/wall.dart';
 
@@ -28,7 +22,7 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
 
   @override
   Future<void> onLoad() async {
-    debugMode = true;
+    // debugMode = true;
     super.onLoad();
     await _loadRoom(
       initialRoom,
@@ -37,7 +31,7 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     );
   }
 
-  void _extractDoorSpawns(TiledComponent map) {
+  void _extractSpawns(TiledComponent map) {
     final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
     if (objectGroup == null) return;
 
@@ -65,97 +59,15 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     }
   }
 
-  // void _spawnRoomObjects(TiledComponent map) {
-  //   final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
-
-  //   for (final obj in objectGroup!.objects) {
-  //     final isNpc = obj.properties.any(
-  //       (p) => p.name == 'type' && p.value == 'npc',
-  //     );
-  //     final isEnemy = obj.properties.any(
-  //       (p) => p.name == 'enemy' && p.value == true,
-  //     );
-
-  //     final isGhost = obj.properties.any(
-  //       (p) => p.name == 'name' && p.value == 'ghost',
-  //     );
-
-  //     final isDude = obj.properties.any(
-  //       (p) => p.name == 'name' && p.value == 'dude',
-  //     );
-
-  //     if (isNpc && isEnemy) {
-  //       var enemy;
-  //       if (isDude) {
-  //         enemy = Enemy(
-  //           name: 'Dude',
-  //           level: 2,
-  //           stats: CharacterStats(
-  //             charClass: CharacterClass.balanced,
-  //             maxHp: 60,
-  //             strength: 1,
-  //           ),
-  //           spriteAsset: 'sprite.png',
-  //           attacks: [
-  //             Attack(name: 'Punch', type: AttackType.physical, power: 0.03),
-  //           ],
-  //         );
-  //       } else if (isGhost) {
-  //         enemy = Enemy(
-  //           name: 'Ghost',
-  //           level: 3,
-  //           spriteAsset: 'ghost_enemy.png',
-  //           stats: CharacterStats(
-  //             charClass: CharacterClass.balanced,
-  //             maxHp: 60,
-  //             strength: 1,
-  //           ),
-  //           attacks: [
-  //             Attack(name: 'Punch', type: AttackType.physical, power: 0.03),
-  //           ],
-  //         );
-  //       }
-  //       enemy.position = Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2);
-
-  //       enemy.add(RectangleHitbox());
-  // enemy.onInteract = () {
-  //   if (_dialogOpen) return;
-  //   _dialogOpen = true;
-  //   gameRef.showDialogue(
-  //     ['Hi there!', 'Do you want to fight?'],
-  //     choices: ['Yes', 'No'],
-  //     onChoiceSelected: (choice) {
-  //       _dialogOpen = false;
-  //       if (choice == 'Yes') {
-  //         gameRef.startBattle([
-  //           gameRef.player as BattleCharacter,
-  //           ...(gameRef.player.currentParty
-  //               .where((c) => c.name != gameRef.player.name)
-  //               .toList()),
-  //         ], enemy);
-  //       }
-  //     },
-  //         );
-  //       };
-
-  //       gameRef.world.add(enemy);
-  //     }
-  //   }
-  // }
-
   void _spawnRoomObjects(TiledComponent map) {
     final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
-    // print(objectGroup!.objects.length);
+
     for (final obj in objectGroup!.objects) {
-      print(obj.toString());
-      print(obj.properties);
       final typeProp = obj.properties.firstWhere(
         (p) => p.name == 'type',
         orElse: () => Property(name: '', value: '', type: PropertyType.string),
       );
 
-      final isEnemy = typeProp.value == 'enemy';
-      final isPartyMember = typeProp.value == 'party_member';
       final isItem = typeProp.value == 'item';
 
       if (isItem) {
@@ -183,13 +95,11 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
       );
 
       final id = idProp.value.toString();
-      final definition =
-          MainPlayerHouseCharacterDefinitions(
-            gameRef: gameRef,
-          ).getCharacters()[id];
+      final definition = MainPlayerHouseCharacters(
+        gameRef: gameRef,
+      ).getCharacter(id);
 
       if (definition == null) {
-        // print('Character ID "$id" not found in enemyDefinitions');
         continue;
       }
 
@@ -197,143 +107,9 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
       definition.position = position;
       definition.add(RectangleHitbox());
 
-      if (isEnemy && definition is Enemy) {
-        // Use optional pre-defined behavior, or assign generic battle trigger
-        // definition.
-
-        gameRef.world.add(definition);
-      } else if (isPartyMember && definition is PartyMember) {
-        gameRef.world.add(definition);
-      }
+      gameRef.world.add(definition);
     }
   }
-
-  // void _spawnRoomObjects(TiledComponent map) {
-  //   final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
-
-  //   for (final obj in objectGroup!.objects) {
-  //     final isNpc = obj.properties.any(
-  //       (p) => p.name == 'type' && p.value == 'npc',
-  //     );
-  //     final isEnemy = obj.properties.any(
-  //       (p) => p.name == 'enemy' && p.value == true,
-  //     );
-
-  //     final isGhost = obj.properties.any(
-  //       (p) => p.name == 'name' && p.value == 'ghost',
-  //     );
-
-  //     final isDude = obj.properties.any(
-  //       (p) => p.name == 'name' && p.value == 'dude',
-  //     );
-
-  //     final isItem = obj.properties.any(
-  //       (p) => p.name == 'type' && p.value == 'item',
-  //     );
-
-  //     //TODO: pull properties from json/tiled
-  //     if (isItem) {
-  //       Item item = Item(
-  //         name: 'toy',
-  //         type: ItemType.keyItem,
-  //         damage: 3,
-  //         value: 10,
-  //         price: 50,
-  //         spriteAsset: 'toy_item.png',
-  //       );
-
-  //       final itemComponent = ItemComponent(
-  //         item: item,
-  //         position: Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2),
-  //       );
-
-  //       gameRef.world.add(itemComponent);
-  //     }
-
-  //     if (isNpc && isEnemy) {
-  //       Enemy enemy;
-
-  //       if (isGhost) {
-  //         enemy = Enemy(
-  //           name: 'Ghost',
-  //           level: 3,
-  //           spriteAsset: 'ghost_enemy.png',
-  //           stats: CharacterStats(
-  //             charClass: CharacterClass.balanced,
-  //             maxHp: 60,
-  //             strength: 1,
-  //           ),
-  //           attacks: [
-  //             Attack(name: 'Spook', type: AttackType.physical, power: 0.03),
-  //           ],
-  //         );
-  //       } else {
-  //         // Default to dude
-  //         enemy = Enemy(
-  //           name: 'Dude',
-  //           level: 2,
-  //           spriteAsset: 'sprite.png',
-  //           stats: CharacterStats(
-  //             charClass: CharacterClass.balanced,
-  //             maxHp: 60,
-  //             strength: 1,
-  //           ),
-  //           attacks: [
-  //             Attack(name: 'Punch', type: AttackType.physical, power: 0.03),
-  //           ],
-  //         );
-  //       }
-
-  //       enemy.position = Vector2(obj.x + obj.width / 2, obj.y + obj.height / 2);
-  //       enemy.add(RectangleHitbox());
-
-  //       if (isGhost) {
-  //         // 👻 Ghost says boo then battles
-  //         enemy.onInteract = () {
-  //           if (_dialogOpen) return;
-  //           _dialogOpen = true;
-
-  //           gameRef.showDialogue(
-  //             ['Boo!'],
-  //             onComplete: () {
-  //               _dialogOpen = false;
-  //               print('starting battle');
-  //               gameRef.startBattle([
-  //                 gameRef.player as BattleCharacter,
-  //                 ...(gameRef.player.currentParty
-  //                     .where((c) => c.name != gameRef.player.name)
-  //                     .toList()),
-  //               ], enemy);
-  //             },
-  //           );
-  //         };
-  //       } else if (isDude) {
-  //         // 🧍 Dude gives a choice
-  //         enemy.onInteract = () {
-  //           if (_dialogOpen) return;
-  //           _dialogOpen = true;
-  //           gameRef.showDialogue(
-  //             ['Hi there!', 'Do you want to fight?'],
-  //             choices: ['Yes', 'No'],
-  //             onChoiceSelected: (choice) {
-  //               _dialogOpen = false;
-  //               if (choice == 'Yes') {
-  //                 gameRef.startBattle([
-  //                   gameRef.player as BattleCharacter,
-  //                   ...gameRef.player.currentParty
-  //                       .where((c) => c.name != gameRef.player.name)
-  //                       .toList(),
-  //                 ], enemy);
-  //               }
-  //             },
-  //           );
-  //         };
-  //       }
-
-  //       gameRef.world.add(enemy);
-  //     }
-  //   }
-  // }
 
   Vector2 getSpawnPoint({
     required String fromRoom,
@@ -372,23 +148,10 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     gameRef.add(world);
     world.add(map);
 
-    // final viewportSize = gameRef.size; // This is your virtual resolution now!
-    // final mapSize = mapPixelSize; // in pixels (like 640x480, 1280x720, etc.)
-
-    // final scaleX = viewportSize.x / mapSize.x;
-    // final scaleY = viewportSize.y / mapSize.y;
-
-    // Choose the smaller scale so it fully fits
-    // final scale = scaleX < scaleY ? scaleX : scaleY;
-
-    // gameRef.camera.viewfinder.zoom = scale;
-
     final screenSize = gameRef.size;
     final zoomX = screenSize.x / mapPixelSize.x;
     final zoomY = screenSize.y / mapPixelSize.y;
     final zoom = zoomX < zoomY ? zoomX : zoomY;
-
-    // gameRef.camera.viewfinder.position = mapPixelSize / 2;
 
     gameRef.camera.viewfinder.zoom = zoom;
     gameRef.camera.viewfinder.position = mapPixelSize / 2;
@@ -418,7 +181,7 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
                 )
                 .value;
 
-        _extractDoorSpawns(map);
+        _extractSpawns(map);
 
         if (objType == 'door') {
           final destStr =

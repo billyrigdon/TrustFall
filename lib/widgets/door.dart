@@ -2,8 +2,8 @@ import 'dart:ui';
 
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
-import 'package:game/game/characters/main_player.dart';
-import 'package:game/game/scenes/main_player_house/main_player_house_room.dart';
+import 'package:game/game/main_player/main_player.dart';
+import 'package:game/game/scenes/main_player_house/rooms/main_player_house_room.dart';
 
 class Door extends PositionComponent with CollisionCallbacks {
   final VoidCallback onEnter;

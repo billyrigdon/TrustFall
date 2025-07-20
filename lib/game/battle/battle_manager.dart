@@ -1,7 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:game/game/battle/battle_action.dart';
 import 'package:game/models/battle_character.dart';
-import 'package:game/game/characters/enemies/enemy.dart';
+import 'package:game/models/enemy.dart';
 import 'package:game/models/items.dart';
 import 'package:game/models/attacks.dart';
 
@@ -10,6 +11,7 @@ class BattleManager extends ChangeNotifier {
   final Enemy enemy;
   bool playerTurn = true;
   bool battleEnded = false;
+  final List<BattleAction> pendingActions = [];
 
   BattleManager({required this.party, required this.enemy}) {
     reset();
