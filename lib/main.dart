@@ -14,7 +14,7 @@ import 'package:game/game/scenes/main_player_house/rooms/main_player_house_room.
 import 'package:game/services/settings_service.dart';
 import 'package:game/widgets/keyboard_gamepad_handler.dart';
 import 'package:game/widgets/touch_overlay.dart';
-import 'package:game/widgets/trust_fall_text_box.dart';
+import 'package:game/widgets/trust_fall_text_cloud.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
@@ -25,7 +25,7 @@ void main() async {
   final pauseMenuKey = GlobalKey<PauseMenuState>();
   final battleMenuKey = GlobalKey<BattleOverlayState>();
   final keyboardListenerKey = GlobalKey<KeyboardGamepadListenerState>();
-  final GlobalKey<TrustFallTextBoxState> textBoxKey = GlobalKey();
+  final GlobalKey<TrustFallTextCloudState> textBoxKey = GlobalKey();
 
   final trustFallGame = TrustFall(
     startMenuKey,
@@ -49,8 +49,10 @@ void main() async {
               game: trustFallGame,
               overlayBuilderMap: {
                 'TextBox':
-                    (context, _) =>
-                        TrustFallTextBox(key: textBoxKey, game: trustFallGame),
+                    (context, _) => TrustFallTextCloud(
+                      key: textBoxKey,
+                      game: trustFallGame,
+                    ),
                 'PauseMenu':
                     (context, _) => PauseMenu(
                       key: pauseMenuKey,
@@ -112,7 +114,7 @@ class TrustFall extends FlameGame
   final GlobalKey<PauseMenuState> pauseMenuKey;
   final GlobalKey<BattleOverlayState> battleMenuKey;
   final GlobalKey<KeyboardGamepadListenerState> keyboardListenerKey;
-  final GlobalKey<TrustFallTextBoxState> textBoxKey;
+  final GlobalKey<TrustFallTextCloudState> textBoxKey;
   Vector2 mapPixelSize = Vector2.zero();
   bool dialogOpen = false;
 
@@ -162,7 +164,7 @@ class TrustFall extends FlameGame
   Future<void> onLoad() async {
     player = MainPlayer();
     final prefs = await SharedPreferences.getInstance();
-    // prefs.clear();
+    prefs.clear();
     final loader = prefs.getString('currentLoader') ?? 'mainPlayerHouse';
 
     switch (loader) {
@@ -236,10 +238,10 @@ class TrustFall extends FlameGame
     List<String>? choices,
     void Function(String choice)? onChoiceSelected,
     VoidCallback? onComplete,
+    Vector2? worldPosition,
   }) {
     overlays.add('TextBox');
 
-    // Delay to ensure overlay is mounted
     Future.delayed(const Duration(milliseconds: 50), () {
       final textBoxState = textBoxKey.currentState;
       textBoxState?.startDialogue(
@@ -247,8 +249,17 @@ class TrustFall extends FlameGame
         choices: choices,
         onChoiceSelected: onChoiceSelected,
         onComplete: onComplete,
+        worldPosition: worldPosition,
       );
     });
+  }
+
+  Vector2 worldToScreen(Vector2 worldPosition) {
+    final matrix = camera.viewfinder.transform.transformMatrix;
+    final transformed = matrix.transform(
+      Vector4(worldPosition.x, worldPosition.y, 0, 1),
+    );
+    return Vector2(transformed.x, transformed.y);
   }
 
   void togglePause() {

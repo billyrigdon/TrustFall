@@ -22,6 +22,7 @@ class MainPlayerHouseCharacters {
       if (gameRef.dialogOpen) return;
       gameRef.dialogOpen = true;
       gameRef.showDialogue(
+        worldPosition: ghost.position,
         ['Boo'],
         onComplete: () {
           gameRef.dialogOpen = false;
@@ -44,6 +45,7 @@ class MainPlayerHouseCharacters {
       if (gameRef.dialogOpen) return;
       gameRef.dialogOpen = true;
       gameRef.showDialogue(
+        worldPosition: dude.position,
         ['Hi there!', 'can i join your party??'],
         choices: ['Yes', 'No'],
         onChoiceSelected: (choice) {
