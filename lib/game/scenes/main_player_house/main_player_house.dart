@@ -139,6 +139,7 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
     String? orientation,
     required String fromRoom,
   }) async {
+    print('loading room');
     final lastDirection = gameRef.player.lastDirection;
     final map = await TiledComponent.load(room.tmxFile, Vector2.all(32));
     fromOrientation = orientation ?? 'horizontal';
@@ -161,9 +162,8 @@ class MainPlayerHouse extends Component with HasGameRef<TrustFall> {
 
     if (Platform.isAndroid) gameRef.overlays.add('TouchControls');
 
-    if (room == MainPlayerHouseRoom.room_1) {
-      _spawnRoomObjects(map);
-    }
+    // if (room == MainPlayerHouseRoom.room_1) {
+    _spawnRoomObjects(map);
 
     final objectGroup = map.tileMap.getLayer<ObjectGroup>('Objects');
     if (objectGroup != null) {

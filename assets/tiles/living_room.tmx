@@ -166,7 +166,15 @@
    </properties>
   </object>
   <object id="15" x="531" y="2"/>
-  <object id="16" x="99" y="155"/>
+  <object id="16" x="97" y="174.333">
+   <properties>
+    <property name="characterId" value="mph_mom"/>
+    <property name="level" value="4"/>
+    <property name="name" value="Mom"/>
+    <property name="spriteAsset" value="mom.png"/>
+    <property name="type" value="npc"/>
+   </properties>
+  </object>
   <object id="17" x="194.667" y="21.3333" width="99.3333" height="60.6667">
    <properties>
     <property name="collidable" type="bool" value="true"/>

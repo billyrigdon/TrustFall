@@ -9,10 +9,11 @@ class MainPlayerHouseCharacters {
 
   MainPlayerHouseCharacters({required this.gameRef});
   getCharacters() {
-    return {'ghost': getGhost(), 'dude': getDude()};
+    return {'ghost': getGhost(), 'dude': getDude(), 'mph_mom': getMom()};
   }
 
   getCharacter(String id) {
+    print('getting character $id');
     return getCharacters()[id];
   }
 
@@ -62,5 +63,24 @@ class MainPlayerHouseCharacters {
     );
     if (!isInParty) return dude;
     return null;
+  }
+
+  PartyMember? getMom() {
+    PartyMember mom =
+        MainPlayerHouseCharacterDefinitions.get('mph_mom') as PartyMember;
+    mom.onInteract = () {
+      if (gameRef.dialogOpen) return;
+      gameRef.dialogOpen = true;
+      gameRef.showDialogue(
+        worldPosition: mom.position,
+        [
+          'Can you go check on your father?',
+          'And tell your brother and sister it\'s time for dinner',
+        ],
+        // choices: ['Yes', 'No'],
+        // onChoiceSelected: (choice) {},
+      );
+    };
+    return mom;
   }
 }

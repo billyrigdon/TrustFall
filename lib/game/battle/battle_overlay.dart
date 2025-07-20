@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -879,9 +880,12 @@ class BattleOverlayState extends State<BattleOverlay> {
                         children: [
                           Text(
                             modalMessage!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize:
+                                  Platform.isAndroid || Platform.isIOS
+                                      ? 22
+                                      : 48,
                               fontFamily: 'Ithica',
                             ),
                             textAlign: TextAlign.center,
