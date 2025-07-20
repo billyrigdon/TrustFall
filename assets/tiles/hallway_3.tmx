@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="15" height="8" tilewidth="32" tileheight="32" infinite="0" nextlayerid="17" nextobjectid="27">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="15" height="8" tilewidth="32" tileheight="32" infinite="0" nextlayerid="17" nextobjectid="25">
  <tileset firstgid="1" source="Room_Builder_free_32x32.tsx"/>
  <tileset firstgid="392" source="Interiors_free_32x32.tsx"/>
  <layer id="7" name="Floor" width="15" height="8">
@@ -142,25 +142,11 @@
   <object id="17" x="443.333" y="71.3334" width="9.33333" height="180.667">
    <properties>
     <property name="fromOrientation" value="horizontal"/>
-    <property name="fromRoom" value="kitchen"/>
-    <property name="spawn" type="bool" value="true"/>
-   </properties>
-  </object>
-  <object id="25" x="26.667" y="70.6667" width="9.33333" height="180.667">
-   <properties>
-    <property name="fromOrientation" value="horizontal"/>
     <property name="fromRoom" value="hallway_2"/>
     <property name="spawn" type="bool" value="true"/>
    </properties>
   </object>
   <object id="18" x="486.667" y="69.3333" width="18" height="182.667">
-   <properties>
-    <property name="destination" value="kitchen"/>
-    <property name="exitOrientation" value="horizontal"/>
-    <property name="type" value="door"/>
-   </properties>
-  </object>
-  <object id="26" x="-25.3337" y="68.6666" width="18" height="182.667">
    <properties>
     <property name="destination" value="hallway_2"/>
     <property name="exitOrientation" value="horizontal"/>
@@ -179,7 +165,7 @@
   </object>
   <object id="23" x="223.333" y="54" width="32" height="6">
    <properties>
-    <property name="destination" value="room_1"/>
+    <property name="destination" value="room_3"/>
     <property name="exitOrientation" value="vertical"/>
     <property name="special_door" type="bool" value="true"/>
     <property name="type" value="door"/>
@@ -188,7 +174,7 @@
   <object id="24" x="223.333" y="74.6667" width="32.6667" height="6">
    <properties>
     <property name="fromOrientation" value="vertical"/>
-    <property name="fromRoom" value="room_1"/>
+    <property name="fromRoom" value="room_3"/>
     <property name="spawn" type="bool" value="true"/>
     <property name="special_spawn" type="bool" value="true"/>
    </properties>

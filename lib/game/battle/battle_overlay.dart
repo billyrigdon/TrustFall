@@ -438,7 +438,7 @@ class BattleOverlayState extends State<BattleOverlay> {
           break;
       }
 
-      if (battleManager.battleEnded) break;
+      if (battleManager.battleEnded) widget.game.endBattle();
     }
 
     playerActions.clear();

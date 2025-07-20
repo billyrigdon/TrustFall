@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="15" height="8" tilewidth="32" tileheight="32" infinite="0" nextlayerid="11" nextobjectid="28">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="15" height="8" tilewidth="32" tileheight="32" infinite="0" nextlayerid="11" nextobjectid="29">
  <tileset firstgid="1" source="Room_Builder_free_32x32.tsx"/>
  <tileset firstgid="392" source="Interiors_free_32x32.tsx"/>
  <layer id="7" name="Floor" width="15" height="8">
@@ -72,9 +72,11 @@
     <property name="type" value="door"/>
    </properties>
   </object>
-  <object id="10" x="164" y="2" width="20" height="41">
+  <object id="10" x="163.667" y="38" width="25.3333" height="12.3333">
    <properties>
-    <property name="destination" value="living_room"/>
+    <property name="destination" value="backyard"/>
+    <property name="exitOrientation" value="vertical"/>
+    <property name="special_door" type="bool" value="true"/>
     <property name="type" value="door"/>
    </properties>
   </object>
@@ -123,6 +125,14 @@
   <object id="27" x="0.666667" y="-0.666667" width="476" height="44.6667">
    <properties>
     <property name="collidable" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="28" x="160.667" y="97" width="29.3333" height="5">
+   <properties>
+    <property name="fromOrientation" value="vertical"/>
+    <property name="fromRoom" value="backyard"/>
+    <property name="spawn" type="bool" value="true"/>
+    <property name="special_spawn" type="bool" value="true"/>
    </properties>
   </object>
  </objectgroup>
