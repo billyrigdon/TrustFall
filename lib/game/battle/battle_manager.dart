@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:game/game/battle/battle_action.dart';
 import 'package:game/models/battle_character.dart';
+import 'package:game/models/battle_status.dart';
 import 'package:game/models/enemy.dart';
 import 'package:game/models/items.dart';
 import 'package:game/models/attacks.dart';
@@ -38,6 +39,12 @@ class BattleManager extends ChangeNotifier {
   ) async {
     if (!playerTurn || battleEnded || !attacker.isAlive) return;
 
+    final didHit = Random().nextDouble() <= attack.accuracy;
+    if (!didHit) {
+      await showMessage('${attacker.name} used ${attack.name} but it missed!');
+      return;
+    }
+
     final base = attacker.stats.strength;
     final damage = (base * attack.power).round();
 
@@ -45,6 +52,29 @@ class BattleManager extends ChangeNotifier {
     await showMessage(
       '${attacker.name} used ${attack.name} and dealt $damage!',
     );
+
+    if (attack.statusEffect != null && attack.statusDuration != null) {
+      final randomMultiplier =
+          1 +
+          (Random().nextDouble() * attack.statusDurationVariance * 2 -
+              attack.statusDurationVariance);
+      // example: 1 ± 0.5 = range of 0.5 to 1.5
+
+      final randomizedDuration = (attack.statusDuration! * randomMultiplier)
+          .round()
+          .clamp(1, 10);
+
+      enemy.applyStatus(
+        BattleStatus(type: attack.statusEffect!, duration: randomizedDuration),
+      );
+      await showMessage(
+        '${enemy.name} is now ${attack.statusEffect.toString().split('.').last} ($randomizedDuration turns)!',
+      );
+
+      // await showMessage(
+      // '${enemy.name} is now ${attack.statusEffect.toString().split('.').last}!',
+      // );
+    }
 
     if (!enemy.isAlive) {
       for (final member in party) {
@@ -72,6 +102,12 @@ class BattleManager extends ChangeNotifier {
   ) async {
     if (!playerTurn || battleEnded || !attacker.isAlive) return;
 
+    final didHit = Random().nextDouble() <= attack.accuracy;
+    if (!didHit) {
+      await showMessage('${attacker.name} used ${attack.name} but it missed!');
+      return;
+    }
+
     final base = attacker.stats.intelligence;
     final damage = (base * attack.power).round();
 
@@ -81,6 +117,25 @@ class BattleManager extends ChangeNotifier {
     await showMessage(
       '${attacker.name} used ${attack.name} and dealt $damage!',
     );
+
+    if (attack.statusEffect != null && attack.statusDuration != null) {
+      final randomMultiplier =
+          1 +
+          (Random().nextDouble() * attack.statusDurationVariance * 2 -
+              attack.statusDurationVariance);
+      // example: 1 ± 0.5 = range of 0.5 to 1.5
+
+      final randomizedDuration = (attack.statusDuration! * randomMultiplier)
+          .round()
+          .clamp(1, 10);
+
+      enemy.applyStatus(
+        BattleStatus(type: attack.statusEffect!, duration: randomizedDuration),
+      );
+      await showMessage(
+        '${enemy.name} is now ${attack.statusEffect.toString().split('.').last} ($randomizedDuration turns)!',
+      );
+    }
 
     if (!enemy.isAlive) {
       for (final member in party) {
@@ -115,8 +170,31 @@ class BattleManager extends ChangeNotifier {
     final attack = enemy.attacks[Random().nextInt(enemy.attacks.length)];
     final damage = (enemy.stats.strength * attack.power).round();
 
+    final didHit = Random().nextDouble() <= attack.accuracy;
+    if (!didHit) {
+      await showMessage('${enemy.name} used ${attack.name} but it missed!');
+      return;
+    }
+
     target.takeDamage(damage);
     await showMessage('${enemy.name} used ${attack.name} and dealt $damage!');
+
+    // ⬇️ Handle status effect
+    if (attack.statusEffect != null && attack.statusDuration != null) {
+      final variance = attack.statusDurationVariance;
+      final multiplier = 1 + (Random().nextDouble() * variance * 2 - variance);
+      final randomizedDuration = (attack.statusDuration! * multiplier)
+          .round()
+          .clamp(1, 10);
+
+      target.applyStatus(
+        BattleStatus(type: attack.statusEffect!, duration: randomizedDuration),
+      );
+
+      await showMessage(
+        '${target.name} is now ${attack.statusEffect.toString().split('.').last} ($randomizedDuration turns)!',
+      );
+    }
 
     if (party.every((c) => !c.isAlive)) {
       await showMessage('You lost!', requireConfirmation: true);
@@ -158,8 +236,38 @@ class BattleManager extends ChangeNotifier {
 
     user.removeItem(item);
 
-    playerTurn = false;
-
     notifyListeners();
+  }
+
+  Future<void> throwItem(
+    BattleCharacter actor,
+    Item item,
+    Future<void> Function(String message, {bool requireConfirmation})
+    showMessage,
+  ) async {
+    if (!playerTurn || battleEnded || !actor.isAlive) return;
+
+    final damage = item.damage ?? 0;
+    enemy.takeDamage(damage.toInt());
+
+    await showMessage('${actor.name} threw ${item.name} and dealt $damage!');
+
+    actor.removeItem(item);
+
+    if (!enemy.isAlive) {
+      for (final member in party) {
+        if (member.isAlive) {
+          final xp = 50.0;
+          member.gainXpFromEnemy(baseXp: xp, enemyLevel: enemy.level);
+          await showMessage(
+            '${member.name} gained $xp XP!',
+            requireConfirmation: true,
+          );
+        }
+      }
+
+      await showMessage('You won!', requireConfirmation: true);
+      battleEnded = true;
+    }
   }
 }

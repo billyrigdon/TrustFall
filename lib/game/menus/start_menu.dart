@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game/main.dart';
@@ -117,84 +118,58 @@ class StartMenuState extends State<StartMenu> {
       children: [
         Material(
           color: Colors.black,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 40.0),
-                  child: Text(
-                    'TrustFall',
-                    style: TextStyle(
-                      fontFamily: '8-bit-limit',
-                      fontSize: 72,
-                      color: Colors.red,
-                      letterSpacing: 4,
-                    ),
-                  ),
-                ),
-                ...List.generate(options.length, (i) {
-                  final selected = i == selectedIndex;
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      '${selected ? '▶' : '  '} ${options[i]}',
-                      style: TextStyle(
-                        fontSize: 36,
-                        color: Colors.white,
-                        fontWeight:
-                            selected ? FontWeight.bold : FontWeight.normal,
-                        fontFamily: 'Ithica',
-                        decoration:
-                            selected
-                                ? TextDecoration.underline
-                                : TextDecoration.none,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = Platform.isAndroid || Platform.isIOS;
+
+              final titleSize = isMobile ? 36.0 : 72.0;
+              final optionSize = isMobile ? 18.0 : 36.0;
+
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 40.0),
+                      child: Text(
+                        'TrustFall',
+                        style: TextStyle(
+                          fontFamily: '8-bit-limit',
+                          fontSize: titleSize,
+                          color: Colors.red,
+                          letterSpacing: 4,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                  );
-                }),
-              ],
-            ),
+                    ...List.generate(options.length, (i) {
+                      final selected = i == selectedIndex;
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          '${selected ? '▶' : '  '} ${options[i]}',
+                          style: TextStyle(
+                            fontSize: optionSize,
+                            color: Colors.white,
+                            fontWeight:
+                                selected ? FontWeight.bold : FontWeight.normal,
+                            fontFamily: 'Ithica',
+                            decoration:
+                                selected
+                                    ? TextDecoration.underline
+                                    : TextDecoration.none,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ],
     );
   }
-
-  //   if (!isReady) {
-  //     return const Material(
-  //       color: Colors.black,
-  //       child: Center(child: CircularProgressIndicator()),
-  //     );
-  //   }
-
-  //   return Stack(
-  //     children: [
-  //       Material(
-  //         color: Colors.black,
-  //         child: Center(
-  //           child: Column(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: List.generate(options.length, (i) {
-  //               final selected = i == selectedIndex;
-  //               return Padding(
-  //                 padding: const EdgeInsets.all(8.0),
-  //                 child: Text(
-  //                   '${selected ? '▶' : '  '} ${options[i]}',
-  //                   style: TextStyle(
-  //                     fontSize: 24,
-  //                     color: selected ? Colors.amber : Colors.white,
-  //                     fontWeight:
-  //                         selected ? FontWeight.bold : FontWeight.normal,
-  //                     fontFamily: 'monospace',
-  //                   ),
-  //                 ),
-  //               );
-  //             }),
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
 }

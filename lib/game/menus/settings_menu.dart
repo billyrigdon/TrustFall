@@ -212,57 +212,6 @@ class SettingsMenuState extends State<SettingsMenu> {
     }
   }
 
-  // void handleInput(String inputLabel) {
-  //   if (!isReady) return;
-
-  //   final up = service.getBinding('MoveUp');
-  //   final down = service.getBinding('MoveDown');
-  //   final action = service.getBinding('Action');
-  //   final back = service.getBinding('Back');
-
-  //   final isUp = inputLabel == up || inputLabel == 'Arrow Up';
-  //   final isDown = inputLabel == down || inputLabel == 'Arrow Down';
-  //   final isAction =
-  //       inputLabel == action ||
-  //       inputLabel == 'Enter' ||
-  //       inputLabel == LogicalKeyboardKey.enter.keyLabel ||
-  //       inputLabel == 'A';
-
-  //   final isBack = inputLabel == back || inputLabel == 'Backspace';
-
-  //   if (isDown) {
-  //     if (mounted) {
-  //       setState(() => selectedIndex = (selectedIndex + 1) % _totalItems);
-  //     }
-  //     _scrollToSelectedItem();
-  //   } else if (isUp) {
-  //     if (mounted) {
-  //       setState(
-  //         () => selectedIndex = (selectedIndex - 1 + _totalItems) % _totalItems,
-  //       );
-  //     }
-  //     _scrollToSelectedItem();
-  //   } else if (isAction) {
-  //     var isListening = false;
-  //     if (selectedIndex < _keyRowKeys.length) {
-  //       final key = _keyRowKeys[selectedIndex];
-  //       if (key.currentState?.listening ?? false) {
-  //         isListening = true;
-  //       }
-  //     }
-  //     if (mounted && !isListening) _triggerSelectedItem();
-  //   } else if (isBack) {
-  //     var isListening = false;
-  //     if (selectedIndex < _keyRowKeys.length) {
-  //       final key = _keyRowKeys[selectedIndex];
-  //       if (key.currentState?.listening ?? false) {
-  //         isListening = true;
-  //       }
-  //     }
-  //     if (mounted && !isListening) widget.game.returnToStartMenu();
-  //   }
-  // }
-
   void _scrollToSelectedItem() {
     // Adjust item height if needed
     const itemHeight = 60.0; // approximate item height + margin
@@ -272,30 +221,6 @@ class SettingsMenuState extends State<SettingsMenu> {
       curve: Curves.easeInOut,
     );
   }
-
-  // void _onKey(RawKeyEvent event) {
-  //   if (event is RawKeyDownEvent) {
-  //     final keyLabel =
-  //         event.logicalKey.keyLabel.isEmpty
-  //             ? event.logicalKey.debugName ?? ''
-  //             : event.logicalKey.keyLabel;
-  //     print(keyLabel);
-  //     handleInput(keyLabel);
-  //   }
-  // }
-
-  // void _onGamepad(GamepadEvent event) {
-  //   if (event.value == 1.0 && event.type == KeyType.button) {
-  //     final label = '${event.gamepadId}:${event.key}';
-  //     handleInput(label);
-  //   } else if ((event.type.toString().contains('axis') ||
-  //           event.type == KeyType.analog) &&
-  //       event.value.abs() > 0.9) {
-  //     final dir = event.value > 0 ? '+' : '-';
-  //     final label = '${event.gamepadId}:${event.key}:$dir';
-  //     handleInput(label);
-  //   }
-  // }
 
   Widget dropdownSetting({
     required String label,

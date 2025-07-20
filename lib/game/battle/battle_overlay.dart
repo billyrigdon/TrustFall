@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:game/game/battle/battle_action.dart';
 import 'package:game/game/battle/battle_manager.dart';
 import 'package:game/models/battle_character.dart';
+import 'package:game/models/battle_status.dart';
 import 'package:game/models/enemy.dart' as game_enemy;
 import 'package:game/game/main_player/main_player.dart';
 import 'package:game/models/items.dart';
@@ -38,6 +39,11 @@ class BattleOverlayState extends State<BattleOverlay> {
   int attackIndex = 0;
   int bankIndex = 0;
   int turnIndex = 0;
+  bool selectingItemAction = false;
+  bool targetingAlly = false;
+  int selectedItemIndex = 0;
+  int selectedAllyIndex = 0;
+
   List<BattleAction> playerActions = [];
 
   final SettingsService settings = SettingsService();
@@ -132,7 +138,22 @@ class BattleOverlayState extends State<BattleOverlay> {
 
     final isBack = inputLabel == back || inputLabel == 'Backspace';
 
+    // 🔙 Back Navigation
     if (isBack) {
+      if (targetingAlly) {
+        setState(() {
+          targetingAlly = false;
+          selectedAllyIndex = 0;
+        });
+        return;
+      }
+      if (selectingItemAction) {
+        setState(() {
+          selectingItemAction = false;
+          selectedIndex = 0;
+        });
+        return;
+      }
       if (itemMenuOpen || attackMenuOpen || bankMenuOpen) {
         setState(() {
           itemMenuOpen = false;
@@ -141,6 +162,52 @@ class BattleOverlayState extends State<BattleOverlay> {
           selectedIndex = 0;
           attackIndex = 0;
           bankIndex = 0;
+        });
+        return;
+      }
+    }
+
+    // 🧺 Item Menu Navigation
+    if (itemMenuOpen && !selectingItemAction && !targetingAlly) {
+      if (isRight) {
+        setState(() {
+          selectedIndex = (selectedIndex + 1) % mainInventory.length;
+          _scrollToSelectedItem(selectedIndex);
+        });
+        return;
+      } else if (isLeft) {
+        setState(() {
+          selectedIndex =
+              (selectedIndex - 1 + mainInventory.length) % mainInventory.length;
+          _scrollToSelectedItem(selectedIndex);
+        });
+        return;
+      }
+    }
+
+    // 🍴 Submenu: Use On / Throw
+    if (itemMenuOpen && selectingItemAction && !targetingAlly) {
+      if (isRight || isLeft) {
+        setState(() {
+          selectedIndex = (selectedIndex == 0) ? 1 : 0;
+        });
+        return;
+      }
+    }
+
+    // 👥 Use On — Party Member Selection
+    if (targetingAlly) {
+      if (isRight) {
+        setState(() {
+          selectedAllyIndex =
+              (selectedAllyIndex + 1) % battleManager.party.length;
+        });
+        return;
+      } else if (isLeft) {
+        setState(() {
+          selectedAllyIndex =
+              (selectedAllyIndex - 1 + battleManager.party.length) %
+              battleManager.party.length;
         });
         return;
       }
@@ -283,6 +350,11 @@ class BattleOverlayState extends State<BattleOverlay> {
   // }
 
   Future<void> _resolveTurn() async {
+    for (final member in battleManager.party) {
+      member.decrementStatuses();
+    }
+    battleManager.enemy.decrementStatuses();
+
     // Collect enemy action
     final enemy = battleManager.enemy;
     final randomAttack = enemy.attacks[Random().nextInt(enemy.attacks.length)];
@@ -304,6 +376,36 @@ class BattleOverlayState extends State<BattleOverlay> {
 
     for (final action in allActions) {
       if (!action.actor.isAlive) continue;
+
+      final result = await action.actor.canAct(showMessage);
+      if (!result.canAct) continue;
+
+      final actor = action.actor;
+      final attack = action.attack;
+      final item = action.item;
+
+      // 🧠 Confused: force random target
+      BattleCharacter? randomTarget;
+      if (result.forceRandomTarget) {
+        final possibleTargets =
+            battleManager.party.where((c) => c.isAlive).toList();
+        if (possibleTargets.isNotEmpty) {
+          randomTarget =
+              possibleTargets[Random().nextInt(possibleTargets.length)];
+        }
+      }
+
+      // 😡 Rage: override to Attack if not already
+      if (result.forceAttack && action.type != ActionType.attack) {
+        if (attack != null) {
+          await battleManager.attackEnemy(actor, attack, showMessage);
+        } else {
+          await showMessage(
+            "${actor.name} is enraged but doesn't know how to fight! 😬",
+          );
+        }
+        continue;
+      }
 
       switch (action.type) {
         case ActionType.attack:
@@ -327,6 +429,10 @@ class BattleOverlayState extends State<BattleOverlay> {
             showMessage,
           );
           break;
+        case ActionType.throwItem:
+          await battleManager.throwItem(actor, item!, showMessage);
+          break;
+
         case ActionType.run:
           // Handle run early?
           break;
@@ -344,10 +450,57 @@ class BattleOverlayState extends State<BattleOverlay> {
     final currentChar = battleManager.party[turnIndex];
 
     if (itemMenuOpen) {
-      final item = mainInventory[selectedIndex];
-      playerActions.add(
-        BattleAction(actor: currentChar, type: ActionType.item, item: item),
-      );
+      if (targetingAlly) {
+        // Ally target confirmed
+        final item = mainInventory[selectedItemIndex];
+        final target = battleManager.party[selectedAllyIndex];
+
+        playerActions.add(
+          BattleAction(
+            actor: currentChar,
+            type: ActionType.item,
+            item: item,
+            target: target,
+          ),
+        );
+        setState(() {
+          targetingAlly = false;
+          selectingItemAction = false;
+          itemMenuOpen = false;
+        });
+      } else if (selectingItemAction) {
+        final item = mainInventory[selectedItemIndex];
+
+        if (selectedIndex == 1) {
+          // Throw selected
+          playerActions.add(
+            BattleAction(
+              actor: currentChar,
+              type: ActionType.throwItem,
+              item: item,
+            ),
+          );
+          setState(() {
+            selectingItemAction = false;
+            itemMenuOpen = false;
+          });
+        } else {
+          // Use On selected → go to target selection
+          setState(() {
+            targetingAlly = true;
+            selectedAllyIndex = 0;
+          });
+          return;
+        }
+      } else {
+        // First item click: go to submenu
+        setState(() {
+          selectingItemAction = true;
+          selectedItemIndex = selectedIndex;
+          selectedIndex = 0;
+        });
+        return;
+      }
     } else if (attackMenuOpen) {
       final attack = currentChar.attacks[attackIndex];
       playerActions.add(
@@ -393,6 +546,8 @@ class BattleOverlayState extends State<BattleOverlay> {
       itemMenuOpen = false;
       attackMenuOpen = false;
       bankMenuOpen = false;
+      targetingAlly = false;
+      selectingItemAction = false;
       selectedIndex = 0;
       attackIndex = 0;
       bankIndex = 0;
@@ -466,9 +621,61 @@ class BattleOverlayState extends State<BattleOverlay> {
     );
   }
 
+  // Widget _buildItemMenu() {
+  //   final filteredItems =
+  //       mainInventory.where((item) => item.type != ItemType.currency).toList();
+
+  //   return SizedBox(
+  //     height: 48,
+  //     width: double.infinity,
+  //     child: Center(
+  //       child: SingleChildScrollView(
+  //         controller: _scrollController,
+  //         scrollDirection: Axis.horizontal,
+  //         child: Align(
+  //           alignment: Alignment.center,
+  //           child: Row(
+  //             mainAxisSize:
+  //                 MainAxisSize.min, // 👈 important: let row size to its content
+  //             children: List.generate(filteredItems.length, (i) {
+  //               final selected = i == selectedIndex;
+  //               final item = filteredItems[i];
+  //               return Padding(
+  //                 padding: const EdgeInsets.symmetric(horizontal: 12.0),
+  //                 child: Text(
+  //                   item.name,
+  //                   style: TextStyle(
+  //                     fontFamily: 'Ithica',
+  //                     fontSize: 22,
+  //                     color: Colors.white,
+  //                     decoration:
+  //                         selected
+  //                             ? TextDecoration.underline
+  //                             : TextDecoration.none,
+  //                     fontWeight:
+  //                         selected ? FontWeight.bold : FontWeight.normal,
+  //                   ),
+  //                 ),
+  //               );
+  //             }),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildItemMenu() {
     final filteredItems =
         mainInventory.where((item) => item.type != ItemType.currency).toList();
+
+    if (targetingAlly) {
+      return _buildItemTargetMenu(filteredItems[selectedItemIndex]);
+    }
+
+    if (selectingItemAction) {
+      return _buildItemActionMenu(filteredItems[selectedItemIndex]);
+    }
 
     return SizedBox(
       height: 48,
@@ -477,35 +684,86 @@ class BattleOverlayState extends State<BattleOverlay> {
         child: SingleChildScrollView(
           controller: _scrollController,
           scrollDirection: Axis.horizontal,
-          child: Align(
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisSize:
-                  MainAxisSize.min, // 👈 important: let row size to its content
-              children: List.generate(filteredItems.length, (i) {
-                final selected = i == selectedIndex;
-                final item = filteredItems[i];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                  child: Text(
-                    item.name,
-                    style: TextStyle(
-                      fontFamily: 'Ithica',
-                      fontSize: 22,
-                      color: Colors.white,
-                      decoration:
-                          selected
-                              ? TextDecoration.underline
-                              : TextDecoration.none,
-                      fontWeight:
-                          selected ? FontWeight.bold : FontWeight.normal,
-                    ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(filteredItems.length, (i) {
+              final selected = i == selectedIndex;
+              final item = filteredItems[i];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: Text(
+                  item.name,
+                  style: TextStyle(
+                    fontFamily: 'Ithica',
+                    fontSize: 22,
+                    color: Colors.white,
+                    decoration:
+                        selected
+                            ? TextDecoration.underline
+                            : TextDecoration.none,
+                    fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                   ),
-                );
-              }),
-            ),
+                ),
+              );
+            }),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildItemActionMenu(Item item) {
+    final actions = ['Use On', 'Throw'];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(actions.length, (i) {
+        final selected = i == selectedIndex;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(
+            actions[i],
+            style: TextStyle(
+              fontFamily: 'Ithica',
+              fontSize: 22,
+              color: Colors.white,
+              decoration:
+                  selected ? TextDecoration.underline : TextDecoration.none,
+              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildItemTargetMenu(Item item) {
+    return Container(
+      width: double.infinity,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        children:
+            battleManager.party.asMap().entries.map((entry) {
+              final i = entry.key;
+              final member = entry.value;
+              final selected = i == selectedAllyIndex;
+
+              return Column(
+                children: [
+                  Text(
+                    member.name,
+                    style: TextStyle(
+                      fontFamily: 'Ithica',
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight:
+                          selected ? FontWeight.bold : FontWeight.normal,
+                      decoration: selected ? TextDecoration.underline : null,
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
       ),
     );
   }
@@ -537,6 +795,25 @@ class BattleOverlayState extends State<BattleOverlay> {
     );
   }
 
+  String _statusLabel(BattleStatus status) {
+    switch (status.type) {
+      case BattleStatusType.stunned:
+        return 'Stunned';
+      case BattleStatusType.confused:
+        return 'Confused';
+      case BattleStatusType.embarrassed:
+        return 'Embarrassed';
+      case BattleStatusType.charmed:
+        return 'Charmed';
+      case BattleStatusType.rage:
+        return 'Raging';
+      case BattleStatusType.selfDoubt:
+        return 'Doubting';
+      case BattleStatusType.asleep:
+        return 'Asleep';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -545,8 +822,30 @@ class BattleOverlayState extends State<BattleOverlay> {
         mainAxisSize: MainAxisSize.max,
         children: [
           const SizedBox(height: 32),
+          if (battleManager.enemy.statuses.any((s) => s.duration > 0))
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Wrap(
+                spacing: 4,
+                children:
+                    battleManager.enemy.statuses
+                        .where((s) => s.duration > 0)
+                        .map(
+                          (s) => Text(
+                            _statusLabel(s),
+                            style: const TextStyle(
+                              color: Colors.orangeAccent,
+                              fontSize: 12,
+                              fontFamily: 'Ithica',
+                            ),
+                          ),
+                        )
+                        .toList(),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(top: 16.0),
+
             child: HealthBar(
               hp: battleManager.enemy.currentHP,
               maxHp: battleManager.enemy.stats.maxHp.toInt(),
@@ -609,12 +908,35 @@ class BattleOverlayState extends State<BattleOverlay> {
                       width: 100,
                       child: Column(
                         children: [
+                          if (member.statuses.any((s) => s.duration > 0))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Wrap(
+                                spacing: 4,
+                                children:
+                                    member.statuses
+                                        .where((s) => s.duration > 0)
+                                        .map(
+                                          (s) => Text(
+                                            _statusLabel(s),
+                                            style: const TextStyle(
+                                              color: Colors.orangeAccent,
+                                              fontSize: 12,
+                                              fontFamily: 'Ithica',
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
+                              ),
+                            ),
+
                           HealthBar(
                             hp: member.currentHP,
                             maxHp: member.stats.maxHp.toInt(),
                             label: member.name,
                             isActive: isActive,
                           ),
+
                           MentalPowerBar(
                             mp: member.currentMP,
                             maxMP: member.stats.maxMP.toInt(),

@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
+import 'package:game/models/battle_status.dart';
+import 'package:game/models/can_act_result.dart';
 import 'package:game/models/enemy.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/models/equipment.dart';
@@ -188,8 +191,38 @@ class MainPlayer extends SpriteAnimationComponent
   ];
 
   List<Attack> _defaultBank() => [
-    Attack(name: 'Insult', type: AttackType.mental, cost: 20, power: 1.0),
-    Attack(name: 'Manipulate', type: AttackType.mental, cost: 40, power: 10),
+    Attack(
+      name: 'Insult',
+      type: AttackType.mental,
+      cost: 20,
+      power: 1.0,
+      statusEffect: BattleStatusType.rage,
+      statusDuration: 2,
+    ),
+    Attack(
+      name: 'Manipulate',
+      type: AttackType.mental,
+      cost: 40,
+      power: 10,
+      statusEffect: BattleStatusType.confused,
+      statusDuration: 3,
+    ),
+    Attack(
+      name: 'Gaslight',
+      type: AttackType.mental,
+      cost: 35,
+      power: 1.2,
+      statusEffect: BattleStatusType.selfDoubt,
+      statusDuration: 3,
+    ),
+    Attack(
+      name: 'Fake Compliment',
+      type: AttackType.mental,
+      cost: 25,
+      power: 0.5,
+      statusEffect: BattleStatusType.charmed,
+      statusDuration: 2,
+    ),
   ];
 
   @override
@@ -657,4 +690,80 @@ class MainPlayer extends SpriteAnimationComponent
 
   @override
   int currentMP = 0;
+
+  final List<BattleStatus> statuses = [];
+
+  bool hasStatus(BattleStatusType type) {
+    return statuses.any((s) => s.type == type && s.duration > 0);
+  }
+
+  void applyStatus(BattleStatus status) {
+    final existing = statuses.firstWhere(
+      (s) => s.type == status.type,
+      orElse: () => BattleStatus(type: status.type, duration: 0),
+    );
+    if (existing.duration == 0) {
+      statuses.add(status);
+    } else {
+      existing.duration = max(existing.duration, status.duration);
+    }
+  }
+
+  Future<CanActResult> canAct(
+    Future<void> Function(String message, {bool requireConfirmation})
+    showMessage,
+  ) async {
+    bool canAct = true;
+    bool forceRandomTarget = false;
+    bool forceAttack = false;
+    bool blockSelfSupport = false;
+
+    for (final status in statuses.where((s) => s.duration > 0)) {
+      switch (status.type) {
+        case BattleStatusType.stunned:
+        case BattleStatusType.asleep:
+          await showMessage('$name is ${status.type.name} and can’t act!');
+          return CanActResult(canAct: false);
+        case BattleStatusType.confused:
+          forceRandomTarget = true;
+          await showMessage('$name is confused...');
+          break;
+        case BattleStatusType.rage:
+          forceAttack = true;
+          await showMessage('$name is in a rage and must attack!');
+          break;
+        case BattleStatusType.selfDoubt:
+          blockSelfSupport = true;
+          await showMessage('$name is full of doubt...');
+          break;
+        case BattleStatusType.embarrassed:
+          // 25% chance to skip turn
+          if (Random().nextDouble() < 0.25) {
+            await showMessage('$name is too embarrassed to act...');
+            return CanActResult(canAct: false);
+          }
+          break;
+        case BattleStatusType.charmed:
+          // 50% chance to skip attacking the enemy
+          if (Random().nextDouble() < 0.5) {
+            await showMessage('$name is charmed and refuses to attack!');
+            return CanActResult(canAct: false);
+          }
+          break;
+      }
+    }
+
+    return CanActResult(
+      canAct: canAct,
+      forceRandomTarget: forceRandomTarget,
+      forceAttack: forceAttack,
+      blockSelfSupport: blockSelfSupport,
+    );
+  }
+
+  void decrementStatuses() {
+    for (final s in statuses) {
+      if (s.duration > 0) s.duration--;
+    }
+  }
 }

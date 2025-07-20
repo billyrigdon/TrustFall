@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
 class MentalPowerBar extends StatelessWidget {
-  // final String label;
   final int mp;
   final int maxMP;
   final bool isActive;
 
   const MentalPowerBar({
     super.key,
-    // required this.label,
     required this.mp,
     required this.maxMP,
     this.isActive = false,

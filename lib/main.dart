@@ -1,11 +1,8 @@
 import 'dart:io' show Platform;
-import 'package:flame/camera.dart';
-import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:game/game/battle/battle_overlay.dart';
-import 'package:game/models/attacks.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/models/enemy.dart';
 import 'package:game/game/main_player/main_player.dart';
@@ -14,7 +11,6 @@ import 'package:game/game/menus/settings_menu.dart';
 import 'package:game/game/menus/start_menu.dart';
 import 'package:game/game/scenes/main_player_house/main_player_house.dart';
 import 'package:game/game/scenes/main_player_house/rooms/main_player_house_room.dart';
-import 'package:game/models/character_stats.dart';
 import 'package:game/services/settings_service.dart';
 import 'package:game/widgets/keyboard_gamepad_handler.dart';
 import 'package:game/widgets/touch_overlay.dart';
@@ -119,8 +115,6 @@ class TrustFall extends FlameGame
   final GlobalKey<TrustFallTextBoxState> textBoxKey;
   Vector2 mapPixelSize = Vector2.zero();
   bool dialogOpen = false;
-  DateTime? _lastPauseToggle;
-  final Duration _pauseCooldown = const Duration(milliseconds: 300);
 
   bool get inMenu =>
       overlays.isActive('StartMenu') ||
@@ -135,9 +129,7 @@ class TrustFall extends FlameGame
     this.battleMenuKey,
     this.keyboardListenerKey,
     this.textBoxKey,
-  ) {
-    print('TrustFall constructor: $hashCode');
-  }
+  );
 
   void startBattle(List<BattleCharacter> party, Enemy enemy) {
     currentParty = party;
@@ -166,29 +158,13 @@ class TrustFall extends FlameGame
     ensureTouchControls();
   }
 
-  // void updateZoomToFitMap() {
-  //   final viewportSize = size;
-  //   final mapSize = mapPixelSize;
-
-  //   final scaleX = viewportSize.x / mapSize.x;
-  //   final scaleY = viewportSize.y / mapSize.y;
-
-  //   // Choose the smaller scale so it fully fits
-  //   final scale = scaleX < scaleY ? scaleX : scaleY;
-
-  //   camera.viewfinder.zoom = scale;
-  // }
-
   @override
   Future<void> onLoad() async {
     player = MainPlayer();
     final prefs = await SharedPreferences.getInstance();
     prefs.clear();
     final loader = prefs.getString('currentLoader') ?? 'mainPlayerHouse';
-    // var settings = SettingsService();
-    // await settings.load();
-    // final res = settings.resolutionToVector(settings.resolution);
-    // camera.viewport = FixedResolutionViewport(resolution: res);
+
     switch (loader) {
       case 'mainPlayerHouse':
       default:
@@ -243,7 +219,6 @@ class TrustFall extends FlameGame
       if (isPressed) {
         final back = settings.getBinding('Back');
         final pause = settings.getBinding('Pause');
-        final battle = settings.getBinding('Battle');
 
         if (label == back || label == 'Backspace') {}
 
@@ -255,24 +230,6 @@ class TrustFall extends FlameGame
       player.handleTouchInput(label, isPressed);
     }
   }
-
-  // void showDialogue(
-  //   List<String> lines, {
-  //   required List<String> choices,
-  //   required void Function(String choice) onChoiceSelected,
-  // }) {
-  //   overlays.add('TextBox');
-
-  //   // Delay to ensure overlay is mounted
-  //   Future.delayed(Duration(milliseconds: 50), () {
-  //     final textBoxState = textBoxKey.currentState;
-  //     textBoxState?.startDialogue(
-  //       lines,
-  //       choices: choices,
-  //       onChoiceSelected: onChoiceSelected,
-  //     );
-  //   });
-  // }
 
   void showDialogue(
     List<String> lines, {
@@ -294,60 +251,16 @@ class TrustFall extends FlameGame
     });
   }
 
-  // void togglePause() {
-  //   isPaused = !isPaused;
-  //   overlays.remove('TouchControls');
-  //   if (isPaused) {
-  //     overlays.add('PauseMenu');
-  //   } else {
-  //     overlays.remove('PauseMenu');
-  //   }
-  //   keyboardListenerKey.currentState?.regainFocus();
-
-  //   ensureTouchControls();
-  // }
-
   void togglePause() {
-    final now = DateTime.now();
-    print('[TOGGLE] pause requested at $now');
-
-    if (_lastPauseToggle != null) {
-      print(
-        '[TOGGLE] time since last toggle: ${now.difference(_lastPauseToggle!)}',
-      );
-    }
-
-    if (_lastPauseToggle != null &&
-        now.difference(_lastPauseToggle!) < _pauseCooldown) {
-      print('[TOGGLE] blocked by cooldown');
-      return;
-    }
-
-    _lastPauseToggle = now;
-    isPaused = !isPaused;
-    print('[TOGGLE] toggled: now paused = $isPaused');
-
     overlays.remove('TouchControls');
+    isPaused = !isPaused;
     if (isPaused) {
-      Future.delayed(Duration(milliseconds: 100), () {
-        overlays.add('PauseMenu');
-      });
+      overlays.add('PauseMenu');
     } else {
       overlays.remove('PauseMenu');
     }
-
     keyboardListenerKey.currentState?.regainFocus();
+
     ensureTouchControls();
   }
-
-  // void showTextBox() {
-  //   overlays.add('TextBox');
-  //   Future.delayed(const Duration(seconds: 2), () {
-  //     overlays.remove('TextBox');
-  //     resumeEngine();
-  //     keyboardListenerKey.currentState?.regainFocus();
-
-  //     ensureTouchControls();
-  //   });
-  // }
 }

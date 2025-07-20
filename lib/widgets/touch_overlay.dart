@@ -108,10 +108,8 @@ class TouchControls extends StatelessWidget {
           ),
         ),
 
-        // Hamburger Menu (Top Right)
         Positioned(top: 16, right: 16, child: _hamburgerButton()),
 
-        // A and B buttons (Bottom Right)
         Positioned(right: 40, bottom: 80, child: _styledButton('Enter', 'A')),
         Positioned(
           right: 100,

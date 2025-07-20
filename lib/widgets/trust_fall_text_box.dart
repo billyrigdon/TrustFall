@@ -3,8 +3,8 @@ import 'package:game/main.dart';
 import 'package:game/services/settings_service.dart';
 
 class TrustFallTextBox extends StatefulWidget {
-  TrustFall game;
-  TrustFallTextBox({super.key, required this.game});
+  final TrustFall game;
+  const TrustFallTextBox({super.key, required this.game});
 
   @override
   TrustFallTextBoxState createState() => TrustFallTextBoxState();

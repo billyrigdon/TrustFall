@@ -22,8 +22,6 @@ class PauseMenuState extends State<PauseMenu> {
   final List<String> tabs = ['Inventory', 'Equipment', 'Party'];
 
   final SettingsService settings = SettingsService();
-  // StreamSubscription<GamepadEvent>? _gamepadSub;
-  // Set<String> _activeInputs = {};
   int selectedInventoryIndex = 0;
   int selectedPartyIndex = 0;
   bool selectingPartyMember = false;
@@ -358,101 +356,6 @@ class PauseMenuState extends State<PauseMenu> {
           );
         },
       ),
-    );
-  }
-
-  // void applyZoomToFitMap() {
-  //     final screenSize = widget.player.game.size;
-  //     final zoomX = screenSize.x / mapPixelSize.x;
-  //     final zoomY = screenSize.y / mapPixelSize.y;
-  //     final zoom = zoomX < zoomY ? zoomX : zoomY;
-  //     widget.player.game.camera.viewfinder.zoom = zoom;
-
-  //   }
-
-  Widget _buildSettingsTab() {
-    final resolutionOptions = [
-      '640x360',
-      '800x600',
-      '1024x768',
-      '1280x720',
-      '1920x1080',
-    ];
-    String current = settings.resolution;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Settings',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            fontFamily: '8-bit-limit',
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Resolution',
-              style: TextStyle(color: Colors.white, fontFamily: 'Ithica'),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_left, color: Colors.white),
-                  onPressed: () async {
-                    final index = resolutionOptions.indexOf(current);
-                    final prev =
-                        (index - 1 + resolutionOptions.length) %
-                        resolutionOptions.length;
-                    final newRes = resolutionOptions[prev];
-                    await settings.setResolution(newRes);
-                    setState(() => current = newRes);
-
-                    // Apply resolution live
-                    widget
-                        .player
-                        .gameRef
-                        .camera
-                        .viewport = FixedResolutionViewport(
-                      resolution: settings.resolutionToVector(newRes),
-                    );
-                  },
-                ),
-                Text(
-                  current,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Ithica',
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.arrow_right, color: Colors.white),
-                  onPressed: () async {
-                    final index = resolutionOptions.indexOf(current);
-                    final next = (index + 1) % resolutionOptions.length;
-                    final newRes = resolutionOptions[next];
-                    await settings.setResolution(newRes);
-                    setState(() => current = newRes);
-
-                    widget
-                        .player
-                        .gameRef
-                        .camera
-                        .viewport = FixedResolutionViewport(
-                      resolution: settings.resolutionToVector(newRes),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ],
     );
   }
 

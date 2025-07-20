@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flame/components.dart';
+import 'package:game/models/battle_status.dart';
+import 'package:game/models/can_act_result.dart';
 import 'package:game/models/party_member.dart';
 import 'package:game/models/items.dart';
 import 'package:game/models/attacks.dart';
@@ -22,6 +25,85 @@ abstract class BattleCharacter extends SpriteComponent {
   List<Attack> bank = [];
 
   List<PartyMember> currentParty = [];
+
+final List<BattleStatus> statuses = [];
+
+  bool hasStatus(BattleStatusType type) {
+    return statuses.any((s) => s.type == type && s.duration > 0);
+  }
+
+  void applyStatus(BattleStatus status) {
+    final existing = statuses.firstWhere(
+      (s) => s.type == status.type,
+      orElse: () => BattleStatus(type: status.type, duration: 0),
+    );
+    if (existing.duration == 0) {
+      statuses.add(status);
+    } else {
+      existing.duration = max(existing.duration, status.duration);
+    }
+  }
+
+Future<CanActResult> canAct(
+    Future<void> Function(String message, {bool requireConfirmation})
+    showMessage,
+  ) async {
+    bool canAct = true;
+    bool forceRandomTarget = false;
+    bool forceAttack = false;
+    bool blockSelfSupport = false;
+
+    for (final status in statuses.where((s) => s.duration > 0)) {
+      switch (status.type) {
+        case BattleStatusType.stunned:
+        case BattleStatusType.asleep:
+          await showMessage('$name is ${status.type.name} and can’t act!');
+          return CanActResult(canAct: false);
+        case BattleStatusType.confused:
+          forceRandomTarget = true;
+          await showMessage('$name is confused...');
+          break;
+        case BattleStatusType.rage:
+          forceAttack = true;
+          await showMessage('$name is in a rage and must attack!');
+          break;
+        case BattleStatusType.selfDoubt:
+          blockSelfSupport = true;
+          await showMessage('$name is full of doubt...');
+          break;
+        case BattleStatusType.embarrassed:
+          // 25% chance to skip turn
+          if (Random().nextDouble() < 0.25) {
+            await showMessage('$name is too embarrassed to act...');
+            return CanActResult(canAct: false);
+          }
+          break;
+        case BattleStatusType.charmed:
+          // 50% chance to skip attacking the enemy
+          if (Random().nextDouble() < 0.5) {
+            await showMessage('$name is charmed and refuses to attack!');
+            return CanActResult(canAct: false);
+          }
+          break;
+      }
+    }
+
+    return CanActResult(
+      canAct: canAct,
+      forceRandomTarget: forceRandomTarget,
+      forceAttack: forceAttack,
+      blockSelfSupport: blockSelfSupport,
+    );
+  }
+
+
+
+  void decrementStatuses() {
+    for (final s in statuses) {
+      if (s.duration > 0) s.duration--;
+    }
+  }
+
 
   Future<void> loadParty() async {
     final prefs = await SharedPreferences.getInstance();
