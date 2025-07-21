@@ -34,6 +34,7 @@ class BattleManager extends ChangeNotifier {
   Future<void> attackEnemy(
     BattleCharacter attacker,
     Attack attack,
+    BattleCharacter target,
     Future<void> Function(String message, {bool requireConfirmation})
     showMessage,
   ) async {
@@ -45,10 +46,10 @@ class BattleManager extends ChangeNotifier {
       return;
     }
 
-    final base = attacker.totalDamage;
+    final base = attacker.stats.strength + attacker.totalDamage;
     final damage = ((base * attack.power)).round();
 
-    enemy.takeDamage(damage);
+    target.takeDamage(damage);
     await showMessage(
       '${attacker.name} used ${attack.name} and dealt $damage!',
     );
@@ -63,11 +64,11 @@ class BattleManager extends ChangeNotifier {
           .round()
           .clamp(1, 10);
 
-      enemy.applyStatus(
+      target.applyStatus(
         BattleStatus(type: attack.statusEffect!, duration: randomizedDuration),
       );
       await showMessage(
-        '${enemy.name} is now ${attack.statusEffect.toString().split('.').last}!',
+        '${target.name} is now ${attack.statusEffect.toString().split('.').last}!',
       );
     }
 
@@ -86,12 +87,18 @@ class BattleManager extends ChangeNotifier {
       battleEnded = true;
     }
 
+    if (party.every((c) => !c.isAlive)) {
+      await showMessage('You lost!', requireConfirmation: true);
+      await _endBattleLoss(showMessage);
+    }
+
     notifyListeners();
   }
 
   Future<void> mentallyAttackEnemy(
     BattleCharacter attacker,
     Attack attack,
+    BattleCharacter target,
     Future<void> Function(String message, {bool requireConfirmation})
     showMessage,
   ) async {
@@ -108,7 +115,7 @@ class BattleManager extends ChangeNotifier {
 
     attacker.currentMP -= attack.cost!;
 
-    enemy.takeDamage(damage);
+    target.takeDamage(damage);
     await showMessage(
       '${attacker.name} used ${attack.name} and dealt $damage!',
     );
@@ -124,11 +131,11 @@ class BattleManager extends ChangeNotifier {
           .round()
           .clamp(1, 10);
 
-      enemy.applyStatus(
+      target.applyStatus(
         BattleStatus(type: attack.statusEffect!, duration: randomizedDuration),
       );
       await showMessage(
-        '${enemy.name} is now ${attack.statusEffect.toString().split('.').last}!',
+        '${target.name} is now ${attack.statusEffect.toString().split('.').last}!',
       );
     }
 
@@ -145,6 +152,11 @@ class BattleManager extends ChangeNotifier {
       }
       await showMessage('You won!', requireConfirmation: true);
       battleEnded = true;
+    }
+
+    if (party.every((c) => !c.isAlive)) {
+      await showMessage('You lost!', requireConfirmation: true);
+      await _endBattleLoss(showMessage);
     }
 
     notifyListeners();

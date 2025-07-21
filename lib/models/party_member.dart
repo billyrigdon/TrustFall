@@ -254,6 +254,7 @@ class PartyMember extends SpriteComponent
     final levelDiff = enemyLevel - stats.level;
     final modifier = 1.0 + (levelDiff * 0.1);
     stats.gainXP(baseXp * modifier.clamp(0.5, 2.0), id: name);
+    stats.saveStats(name);
   }
 
   @override

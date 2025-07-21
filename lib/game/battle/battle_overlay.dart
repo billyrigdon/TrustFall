@@ -265,14 +265,17 @@ class BattleOverlayState extends State<BattleOverlay> {
     // Collect enemy action
     final enemy = battleManager.enemy;
     final randomAttack = enemy.attacks[Random().nextInt(enemy.attacks.length)];
-    final target =
-        battleManager.party.where((c) => c.isAlive).toList()..shuffle();
-    if (target.isNotEmpty) {
+    final aliveTargets = battleManager.party.where((c) => c.isAlive).toList();
+
+    if (aliveTargets.isNotEmpty) {
+      final randomTarget = aliveTargets[Random().nextInt(aliveTargets.length)];
+
       battleManager.pendingActions.add(
         BattleAction(
           actor: enemy,
           type: ActionType.attack,
           attack: randomAttack,
+          target: randomTarget,
         ),
       );
     }
@@ -291,32 +294,33 @@ class BattleOverlayState extends State<BattleOverlay> {
       final attack = action.attack;
       final item = action.item;
 
-      BattleCharacter? randomTarget;
-      if (result.forceRandomTarget) {
-        final possibleTargets =
-            battleManager.party.where((c) => c.isAlive).toList();
-        if (possibleTargets.isNotEmpty) {
-          randomTarget =
-              possibleTargets[Random().nextInt(possibleTargets.length)];
-        }
-      }
+      // BattleCharacter? randomTarget;
+      // if (result.forceRandomTarget) {
+      //   final possibleTargets =
+      //       battleManager.party.where((c) => c.isAlive).toList();
+      //   if (possibleTargets.isNotEmpty) {
+      //     randomTarget =
+      //         possibleTargets[Random().nextInt(possibleTargets.length)];
+      //   }
+      // }
 
-      if (result.forceAttack && action.type != ActionType.attack) {
-        if (attack != null) {
-          await battleManager.attackEnemy(actor, attack, showMessage);
-        } else {
-          await showMessage(
-            "${actor.name} is enraged but doesn't know how to fight! 😬",
-          );
-        }
-        continue;
-      }
+      // if (result.forceAttack && action.type != ActionType.attack) {
+      //   if (attack != null) {
+      //     await battleManager.attackEnemy(actor, attack, enemy, showMessage);
+      //   } else {
+      //     await showMessage(
+      //       "${actor.name} is enraged but doesn't know how to fight! 😬",
+      //     );
+      //   }
+      //   continue;
+      // }
 
       switch (action.type) {
         case ActionType.attack:
           await battleManager.attackEnemy(
             action.actor,
             action.attack!,
+            action.target!,
             showMessage,
           );
           break;
@@ -324,6 +328,7 @@ class BattleOverlayState extends State<BattleOverlay> {
           await battleManager.mentallyAttackEnemy(
             action.actor,
             action.attack!,
+            action.target!,
             showMessage,
           );
           break;
@@ -353,7 +358,7 @@ class BattleOverlayState extends State<BattleOverlay> {
 
   void _handleSelection() async {
     final currentChar = battleManager.party[turnIndex];
-
+    final enemy = battleManager.enemy;
     if (itemMenuOpen) {
       if (targetingAlly) {
         // Ally target confirmed
@@ -383,6 +388,7 @@ class BattleOverlayState extends State<BattleOverlay> {
               actor: currentChar,
               type: ActionType.throwItem,
               item: item,
+              target: enemy,
             ),
           );
           setState(() {
@@ -413,6 +419,7 @@ class BattleOverlayState extends State<BattleOverlay> {
           actor: currentChar,
           type: ActionType.attack,
           attack: attack,
+          target: enemy,
         ),
       );
     } else if (bankMenuOpen) {
@@ -426,6 +433,7 @@ class BattleOverlayState extends State<BattleOverlay> {
           actor: currentChar,
           type: ActionType.bank,
           attack: bankMove,
+          target: enemy,
         ),
       );
     } else {

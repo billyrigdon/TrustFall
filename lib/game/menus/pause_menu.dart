@@ -80,7 +80,7 @@ class PauseMenuState extends State<PauseMenu> {
             _dialogEquipmentOptions[selectedEquipmentDialogIndex],
           );
         }
-      } 
+      }
 
       return;
     }

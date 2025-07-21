@@ -168,7 +168,7 @@ class TrustFall extends FlameGame
   @override
   Future<void> onLoad() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.clear();
+    // prefs.clear();
     player = MainPlayer();
     final loader = prefs.getString('currentLoader') ?? 'mainPlayerHouse';
 
