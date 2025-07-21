@@ -186,7 +186,8 @@ class MainPlayer extends SpriteAnimationComponent
     await loadAttacks();
     await loadBank();
     await loadParty();
-    // handleMoving(1);
+    await loadEquipment();
+    await assignStarterEquipmentIfNeeded();
   }
 
   List<Attack> _defaultAttacks() => [
@@ -366,6 +367,66 @@ class MainPlayer extends SpriteAnimationComponent
     }
   }
 
+  final Map<EquipmentSlot, Equipment?> equipped = {
+    for (var slot in EquipmentSlot.values) slot: null,
+  };
+
+  int get totalDefense {
+    final gearBonus = equipped.values.whereType<Equipment>().fold<int>(
+      0,
+      (sum, eq) => sum + eq.defense,
+    );
+    return stats.defense.toInt() + gearBonus;
+  }
+
+  int get totalIntelligence {
+    final gearBonus = equipped.values.whereType<Equipment>().fold<int>(
+      0,
+      (sum, eq) => sum + eq.intelligence,
+    );
+    return stats.intelligence.toInt() + gearBonus;
+  }
+
+  double get totalDamage {
+    final weapon = equipped[EquipmentSlot.weapon];
+    return stats.strength.toInt() + (weapon?.damage ?? 0);
+  }
+
+  bool equip(Equipment item) {
+    if (item.slot == null) return false;
+    equipped[item.slot] = item;
+    return true;
+  }
+
+  void unequip(EquipmentSlot slot) {
+    equipped[slot] = null;
+  }
+
+  Future<void> saveEquipment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final map = equipped.map(
+      (slot, item) => MapEntry(
+        slot.toString().split('.').last,
+        item != null ? jsonEncode(item.toJson()) : '',
+      ),
+    );
+    await prefs.setString('$name-equipment', jsonEncode(map));
+  }
+
+  Future<void> loadEquipment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('$name-equipment');
+    if (raw == null) return;
+
+    final Map<String, dynamic> jsonMap = jsonDecode(raw);
+    for (final entry in jsonMap.entries) {
+      final slot = equipmentSlotFromString(entry.key);
+      final data = entry.value;
+      equipped[slot] =
+          data.isNotEmpty ? Equipment.fromJson(jsonDecode(data)) : null;
+    }
+  }
+
   @override
   void update(double dt) {
     super.update(dt);
@@ -498,10 +559,28 @@ class MainPlayer extends SpriteAnimationComponent
           price: 100,
         ),
         Equipment(
+          name: 'Rusty Fork',
+          slot: EquipmentSlot.weapon,
+          damage: 5,
+          price: 25,
+        ),
+        Equipment(
           name: 'Shoes',
           slot: EquipmentSlot.footwear,
           damage: 5,
           price: 25,
+        ),
+        Equipment(
+          name: 'T-shirt',
+          slot: EquipmentSlot.clothes,
+          defense: 2,
+          price: 10,
+        ),
+        Equipment(
+          name: 'Charm Bracelet',
+          slot: EquipmentSlot.accessory,
+          intelligence: 3,
+          price: 30,
         ),
       ];
     } else {
@@ -530,6 +609,30 @@ class MainPlayer extends SpriteAnimationComponent
     inventory.insert(0, existingCurrency); // Ensure it's always the first item
 
     await saveInventory();
+  }
+
+  Future<void> assignStarterEquipmentIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasStarterEquipment =
+        prefs.getBool('$name-starter-equipment') ?? false;
+
+    if (hasStarterEquipment) return; // already assigned once
+
+    for (final slot in EquipmentSlot.values) {
+      if (equipped[slot] == null) {
+        final fallback = inventory.whereType<Equipment>().firstWhere(
+          (e) => ((e.slot) == slot),
+        );
+
+        if (fallback != null) {
+          equip(fallback);
+          removeItem(fallback);
+        }
+      }
+    }
+
+    await saveEquipment();
+    await prefs.setBool('$name-starter-equipment', true);
   }
 
   Future<void> saveInventory() async {

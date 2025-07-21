@@ -34,10 +34,6 @@ class MentalPowerBar extends StatelessWidget {
                 child: Container(color: Colors.blue),
               ),
             ),
-            // Positioned(
-            // right: 4,
-            // bottom: -18,
-            // child:
             Text(
               '$mp/$maxMP',
               style: const TextStyle(
@@ -46,7 +42,6 @@ class MentalPowerBar extends StatelessWidget {
                 fontFamily: '8-bit-limit',
               ),
             ),
-            // ),
           ],
         ),
       ],

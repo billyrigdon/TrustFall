@@ -49,7 +49,6 @@ class BattleOverlayState extends State<BattleOverlay> {
 
   final SettingsService settings = SettingsService();
   List<String> queuedMessages = [];
-  // bool didEnemyAttack = false;
 
   String? modalMessage;
   Completer<void>? _modalCompleter;
@@ -92,7 +91,6 @@ class BattleOverlayState extends State<BattleOverlay> {
     _modalCompleter = Completer<void>();
 
     if (!requireConfirmation) {
-      // Prevent early dismissal
       await Future.delayed(const Duration(seconds: 2));
       if (_modalCompleter != null && !_modalCompleter!.isCompleted) {
         setState(() => modalMessage = null);
@@ -124,22 +122,17 @@ class BattleOverlayState extends State<BattleOverlay> {
     if (modalMessage != null) {
       return;
     }
-    final up = settings.getBinding('MoveUp');
-    final down = settings.getBinding('MoveDown');
     final left = settings.getBinding('MoveLeft');
     final right = settings.getBinding('MoveRight');
     final action = settings.getBinding('Action');
     final back = settings.getBinding('Back');
     final isRight = inputLabel == right || inputLabel == 'Arrow Right';
     final isLeft = inputLabel == left || inputLabel == 'Arrow Left';
-    final isDown = inputLabel == down || inputLabel == 'Arrow Down';
-    final isUp = inputLabel == up || inputLabel == 'Arrow Up';
     final isAction =
         inputLabel == action || inputLabel == 'Enter' || inputLabel == 'Space';
 
     final isBack = inputLabel == back || inputLabel == 'Backspace';
 
-    // 🔙 Back Navigation
     if (isBack) {
       if (targetingAlly) {
         setState(() {
@@ -168,7 +161,6 @@ class BattleOverlayState extends State<BattleOverlay> {
       }
     }
 
-    // 🧺 Item Menu Navigation
     if (itemMenuOpen && !selectingItemAction && !targetingAlly) {
       if (isRight) {
         setState(() {
@@ -186,7 +178,6 @@ class BattleOverlayState extends State<BattleOverlay> {
       }
     }
 
-    // 🍴 Submenu: Use On / Throw
     if (itemMenuOpen && selectingItemAction && !targetingAlly) {
       if (isRight || isLeft) {
         setState(() {
@@ -196,7 +187,6 @@ class BattleOverlayState extends State<BattleOverlay> {
       }
     }
 
-    // 👥 Use On — Party Member Selection
     if (targetingAlly) {
       if (isRight) {
         setState(() {
@@ -262,93 +252,9 @@ class BattleOverlayState extends State<BattleOverlay> {
                 currentChar.bank.length,
       );
     } else if (isAction) {
-      // if (modalMessage == null) {
       _handleSelection();
-      // }
     }
   }
-
-  // void _handleSelection() async {
-  //   final currentChar = battleManager.party[turnIndex];
-
-  //   if (itemMenuOpen) {
-  //     final item = mainInventory[selectedIndex];
-
-  //     await battleManager.useItemOn(currentChar, item, showMessage);
-
-  //     setState(() {
-  //       itemMenuOpen = false;
-  //       selectedIndex = 0;
-  //       if (mainInventory.isEmpty) {
-  //         commands = ['Attack', 'Run'];
-  //       }
-  //     });
-
-  //     await _endTurn();
-  //   } else if (attackMenuOpen) {
-  //     final attack = currentChar.attacks[attackIndex];
-  //     await battleManager.attackEnemy(currentChar, attack, showMessage);
-
-  //     setState(() {
-  //       attackMenuOpen = false;
-  //       attackIndex = 0;
-  //     });
-
-  //     await _endTurn();
-  //   } else if (bankMenuOpen) {
-  //     final bankMove = currentChar.bank[bankIndex];
-  //     await battleManager.mentallyAttackEnemy(
-  //       currentChar,
-  //       bankMove,
-  //       showMessage,
-  //     );
-
-  //     setState(() {
-  //       bankMenuOpen = false;
-  //       bankIndex = 0;
-  //     });
-
-  //     await _endTurn();
-  //   } else {
-  //     switch (commands[selectedIndex]) {
-  //       case 'Attack':
-  //         setState(() {
-  //           attackMenuOpen = true;
-  //           attackIndex = 0;
-  //         });
-  //         break;
-  //       case 'Bank':
-  //         setState(() {
-  //           bankMenuOpen = true;
-  //           bankIndex = 0;
-  //         });
-  //         break;
-  //       case 'Items':
-  //         setState(() {
-  //           itemMenuOpen = true;
-  //           selectedIndex = 0;
-  //         });
-  //         break;
-  //       case 'Run':
-  //         setState(() {
-  //           attackMenuOpen = false;
-  //           itemMenuOpen = false;
-  //           selectedIndex = 0;
-  //         });
-
-  //         await showMessage(
-  //           '${currentChar.name} ran away!',
-  //           requireConfirmation: true,
-  //         );
-  //         battleManager.battleEnded = true;
-
-  //         if (mounted)
-  //           widget.game
-  //               .endBattle(); // optional: delay this if you want confirmation
-  //         return; // ✅ Early return to prevent continuing
-  //     }
-  //   }
-  // }
 
   Future<void> _resolveTurn() async {
     for (final member in battleManager.party) {
@@ -385,7 +291,6 @@ class BattleOverlayState extends State<BattleOverlay> {
       final attack = action.attack;
       final item = action.item;
 
-      // 🧠 Confused: force random target
       BattleCharacter? randomTarget;
       if (result.forceRandomTarget) {
         final possibleTargets =
@@ -396,7 +301,6 @@ class BattleOverlayState extends State<BattleOverlay> {
         }
       }
 
-      // 😡 Rage: override to Attack if not already
       if (result.forceAttack && action.type != ActionType.attack) {
         if (attack != null) {
           await battleManager.attackEnemy(actor, attack, showMessage);
@@ -513,6 +417,10 @@ class BattleOverlayState extends State<BattleOverlay> {
       );
     } else if (bankMenuOpen) {
       final bankMove = currentChar.bank[bankIndex];
+      if ((bankMove.cost ?? 0) > currentChar.currentMP) {
+        await showMessage('You don\'t have enough mental power!');
+        return;
+      }
       playerActions.add(
         BattleAction(
           actor: currentChar,
@@ -606,7 +514,7 @@ class BattleOverlayState extends State<BattleOverlay> {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
             child: Text(
-              '${bankMove.name} (${(currentChar.stats.intelligence * bankMove.power).toInt()} dmg)',
+              '${bankMove.name} (${(bankMove.cost ?? 0).toInt()} mp)',
               style: TextStyle(
                 fontFamily: 'Ithica',
                 fontSize: 22,
@@ -621,50 +529,6 @@ class BattleOverlayState extends State<BattleOverlay> {
       ),
     );
   }
-
-  // Widget _buildItemMenu() {
-  //   final filteredItems =
-  //       mainInventory.where((item) => item.type != ItemType.currency).toList();
-
-  //   return SizedBox(
-  //     height: 48,
-  //     width: double.infinity,
-  //     child: Center(
-  //       child: SingleChildScrollView(
-  //         controller: _scrollController,
-  //         scrollDirection: Axis.horizontal,
-  //         child: Align(
-  //           alignment: Alignment.center,
-  //           child: Row(
-  //             mainAxisSize:
-  //                 MainAxisSize.min, // 👈 important: let row size to its content
-  //             children: List.generate(filteredItems.length, (i) {
-  //               final selected = i == selectedIndex;
-  //               final item = filteredItems[i];
-  //               return Padding(
-  //                 padding: const EdgeInsets.symmetric(horizontal: 12.0),
-  //                 child: Text(
-  //                   item.name,
-  //                   style: TextStyle(
-  //                     fontFamily: 'Ithica',
-  //                     fontSize: 22,
-  //                     color: Colors.white,
-  //                     decoration:
-  //                         selected
-  //                             ? TextDecoration.underline
-  //                             : TextDecoration.none,
-  //                     fontWeight:
-  //                         selected ? FontWeight.bold : FontWeight.normal,
-  //                   ),
-  //                 ),
-  //               );
-  //             }),
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildItemMenu() {
     final filteredItems =
@@ -856,7 +720,6 @@ class BattleOverlayState extends State<BattleOverlay> {
           ),
           const SizedBox(height: 16),
 
-          // 🔥 Enemy image scales to fit available space
           Expanded(
             flex: 3,
             child: Padding(
@@ -868,7 +731,6 @@ class BattleOverlayState extends State<BattleOverlay> {
             ),
           ),
 
-          // 🔥 Message section
           Flexible(
             flex: 1,
             child: SizedBox(
@@ -951,14 +813,7 @@ class BattleOverlayState extends State<BattleOverlay> {
                   }).toList(),
             ),
           ),
-
-          // Text(
-          //   'Turn: ${battleManager.party[turnIndex].name}',
-          //   style: const TextStyle(color: Colors.white70, fontFamily: 'Ithica'),
-          // ),
           const SizedBox(height: 12),
-
-          // 🔥 Battle menu (let it wrap if needed)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child:
@@ -975,21 +830,5 @@ class BattleOverlayState extends State<BattleOverlay> {
         ],
       ),
     );
-  }
-
-  Future<void> _endTurn() async {
-    turnIndex++;
-    if (turnIndex >= battleManager.party.length) {
-      turnIndex = 0;
-      battleManager.playerTurn = false;
-
-      if (battleManager.battleEnded) {
-        if (mounted) widget.game.endBattle();
-      }
-
-      if (turnIndex == 0) {
-        await battleManager.enemyAttack(showMessage);
-      }
-    }
   }
 }

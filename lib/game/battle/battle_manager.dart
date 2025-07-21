@@ -45,8 +45,8 @@ class BattleManager extends ChangeNotifier {
       return;
     }
 
-    final base = attacker.stats.strength;
-    final damage = (base * attack.power).round();
+    final base = attacker.totalDamage;
+    final damage = ((base * attack.power)).round();
 
     enemy.takeDamage(damage);
     await showMessage(
@@ -103,7 +103,7 @@ class BattleManager extends ChangeNotifier {
       return;
     }
 
-    final base = attacker.stats.intelligence;
+    final base = attacker.totalIntelligence;
     final damage = (base * attack.power).round();
 
     attacker.currentMP -= attack.cost!;
@@ -128,7 +128,7 @@ class BattleManager extends ChangeNotifier {
         BattleStatus(type: attack.statusEffect!, duration: randomizedDuration),
       );
       await showMessage(
-        '${enemy.name} is now ${attack.statusEffect.toString().split('.').last} ($randomizedDuration turns)!',
+        '${enemy.name} is now ${attack.statusEffect.toString().split('.').last}!',
       );
     }
 
@@ -187,7 +187,7 @@ class BattleManager extends ChangeNotifier {
       );
 
       await showMessage(
-        '${target.name} is now ${attack.statusEffect.toString().split('.').last} ($randomizedDuration turns)!',
+        '${target.name} is now ${attack.statusEffect.toString().split('.').last}!',
       );
     }
 

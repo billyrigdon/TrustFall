@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:game/models/battle_status.dart';
 import 'package:game/models/can_act_result.dart';
+import 'package:game/models/equipment.dart';
 import 'package:game/models/party_member.dart';
 import 'package:game/models/items.dart';
 import 'package:game/models/attacks.dart';
@@ -26,7 +27,67 @@ abstract class BattleCharacter extends SpriteComponent {
 
   List<PartyMember> currentParty = [];
 
-final List<BattleStatus> statuses = [];
+  final List<BattleStatus> statuses = [];
+
+  final Map<EquipmentSlot, Equipment?> equipped = {
+    for (var slot in EquipmentSlot.values) slot: null,
+  };
+
+  int get totalDefense {
+    final gearBonus = equipped.values.whereType<Equipment>().fold<int>(
+      0,
+      (sum, eq) => sum + eq.defense,
+    );
+    return stats.defense.toInt() + gearBonus;
+  }
+
+  int get totalIntelligence {
+    final gearBonus = equipped.values.whereType<Equipment>().fold<int>(
+      0,
+      (sum, eq) => sum + eq.intelligence,
+    );
+    return stats.intelligence.toInt() + gearBonus;
+  }
+
+  double get totalDamage {
+    final weapon = equipped[EquipmentSlot.weapon];
+    return (weapon?.damage ?? 0);
+  }
+
+  bool equip(Equipment item) {
+    if (item.slot == null) return false;
+    equipped[item.slot] = item;
+    return true;
+  }
+
+  void unequip(EquipmentSlot slot) {
+    equipped[slot] = null;
+  }
+
+  Future<void> saveEquipment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final map = equipped.map(
+      (slot, item) => MapEntry(
+        slot.toString().split('.').last,
+        item != null ? jsonEncode(item.toJson()) : '',
+      ),
+    );
+    await prefs.setString('$name-equipment', jsonEncode(map));
+  }
+
+  Future<void> loadEquipment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('$name-equipment');
+    if (raw == null) return;
+
+    final Map<String, dynamic> jsonMap = jsonDecode(raw);
+    for (final entry in jsonMap.entries) {
+      final slot = equipmentSlotFromString(entry.key);
+      final data = entry.value;
+      equipped[slot] =
+          data.isNotEmpty ? Equipment.fromJson(jsonDecode(data)) : null;
+    }
+  }
 
   bool hasStatus(BattleStatusType type) {
     return statuses.any((s) => s.type == type && s.duration > 0);
@@ -44,7 +105,7 @@ final List<BattleStatus> statuses = [];
     }
   }
 
-Future<CanActResult> canAct(
+  Future<CanActResult> canAct(
     Future<void> Function(String message, {bool requireConfirmation})
     showMessage,
   ) async {
@@ -96,14 +157,11 @@ Future<CanActResult> canAct(
     );
   }
 
-
-
   void decrementStatuses() {
     for (final s in statuses) {
       if (s.duration > 0) s.duration--;
     }
   }
-
 
   Future<void> loadParty() async {
     final prefs = await SharedPreferences.getInstance();
@@ -217,7 +275,7 @@ Future<CanActResult> canAct(
     }
   }
 
-Future<void> saveBank() async {
+  Future<void> saveBank() async {
     final prefs = await SharedPreferences.getInstance();
     final list = attacks.map((a) => jsonEncode(a.toJson())).toList();
     await prefs.setStringList('$name-bank-moves', list);
@@ -230,10 +288,9 @@ Future<void> saveBank() async {
     }
   }
 
-
   List<Attack> _defaultAttacks(); // Must be implemented by subclasses
 
-  List<Attack> _defaultBank(); 
+  List<Attack> _defaultBank();
 
   bool get isAlive => _currentHP > 0;
 }

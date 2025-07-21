@@ -80,6 +80,66 @@ class PartyMember extends SpriteComponent
     return statuses.any((s) => s.type == type && s.duration > 0);
   }
 
+  final Map<EquipmentSlot, Equipment?> equipped = {
+    for (var slot in EquipmentSlot.values) slot: null,
+  };
+
+  int get totalDefense {
+    final gearBonus = equipped.values.whereType<Equipment>().fold<int>(
+      0,
+      (sum, eq) => sum + eq.defense,
+    );
+    return stats.defense.toInt() + gearBonus;
+  }
+
+  int get totalIntelligence {
+    final gearBonus = equipped.values.whereType<Equipment>().fold<int>(
+      0,
+      (sum, eq) => sum + eq.intelligence,
+    );
+    return stats.intelligence.toInt() + gearBonus;
+  }
+
+  double get totalDamage {
+    final weapon = equipped[EquipmentSlot.weapon];
+    return (weapon?.damage ?? 0);
+  }
+
+  bool equip(Equipment item) {
+    if (item.slot == null) return false;
+    equipped[item.slot] = item;
+    return true;
+  }
+
+  void unequip(EquipmentSlot slot) {
+    equipped[slot] = null;
+  }
+
+  Future<void> saveEquipment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final map = equipped.map(
+      (slot, item) => MapEntry(
+        slot.toString().split('.').last,
+        item != null ? jsonEncode(item.toJson()) : '',
+      ),
+    );
+    await prefs.setString('$name-equipment', jsonEncode(map));
+  }
+
+  Future<void> loadEquipment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('$name-equipment');
+    if (raw == null) return;
+
+    final Map<String, dynamic> jsonMap = jsonDecode(raw);
+    for (final entry in jsonMap.entries) {
+      final slot = equipmentSlotFromString(entry.key);
+      final data = entry.value;
+      equipped[slot] =
+          data.isNotEmpty ? Equipment.fromJson(jsonDecode(data)) : null;
+    }
+  }
+
   Future<CanActResult> canAct(
     Future<void> Function(String message, {bool requireConfirmation})
     showMessage,
@@ -131,7 +191,6 @@ class PartyMember extends SpriteComponent
       blockSelfSupport: blockSelfSupport,
     );
   }
-
 
   void applyStatus(BattleStatus status) {
     final existing = statuses.firstWhere(

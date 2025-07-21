@@ -18,8 +18,8 @@ class AntBattleTriggerZone extends PositionComponent
   }
 
   @override
-  void onCollision(Set<Vector2> points, PositionComponent other) {
-    super.onCollision(points, other);
+  void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollision(intersectionPoints, other);
 
     if (triggered || other is! MainPlayer) return;
 

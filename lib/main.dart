@@ -104,7 +104,7 @@ class TrustFall extends FlameGame
   List<BattleCharacter> currentParty = [];
   late Enemy currentEnemy;
   bool isPaused = false;
-  StartMenu? startMenu; // If you need access to StartMenu methods
+  StartMenu? startMenu;
   bool playerIsInMenu = true;
   bool playerIsInSettingsMenu = false;
   bool inBattle = false;
@@ -167,9 +167,9 @@ class TrustFall extends FlameGame
 
   @override
   Future<void> onLoad() async {
-    player = MainPlayer();
     final prefs = await SharedPreferences.getInstance();
-    // prefs.clear();
+    prefs.clear();
+    player = MainPlayer();
     final loader = prefs.getString('currentLoader') ?? 'mainPlayerHouse';
 
     switch (loader) {

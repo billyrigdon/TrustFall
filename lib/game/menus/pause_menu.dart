@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/game/main_player/main_player.dart';
+import 'package:game/models/equipment.dart';
 import 'package:game/models/items.dart';
 import 'package:game/services/settings_service.dart';
 
@@ -29,10 +30,16 @@ class PauseMenuState extends State<PauseMenu> {
   late ScrollController _partyDialogScrollController;
   Completer<BattleCharacter?>? _partySelectionCompleter;
   List<BattleCharacter> _dialogParty = [];
+  int selectedEquipmentIndex = 0;
+  late ScrollController _equipmentScrollController;
+  List<Equipment> _dialogEquipmentOptions = [];
+  int selectedEquipmentDialogIndex = 0;
+  Completer<Equipment?>? _equipmentSelectionCompleter;
 
   @override
   void initState() {
     super.initState();
+    _equipmentScrollController = ScrollController();
     _inventoryScrollController = ScrollController();
     _partyDialogScrollController = ScrollController();
   }
@@ -54,6 +61,29 @@ class PauseMenuState extends State<PauseMenu> {
     final isLeft = input == left || input == 'Arrow Left';
     final isRight = input == right || input == 'Arrow Right';
     final isAction = input == action || input == 'Enter' || input == 'Space';
+
+    if (selectingEquipment) {
+      // final back = settings.getBinding('Back');
+
+      if (isUp || isDown) {
+        setState(() {
+          selectedEquipmentDialogIndex =
+              (selectedEquipmentDialogIndex +
+                  (isDown ? 1 : -1) +
+                  _dialogEquipmentOptions.length) %
+              _dialogEquipmentOptions.length;
+        });
+      } else if (isAction) {
+        if (!_equipmentSelectionCompleter!.isCompleted) {
+          Navigator.of(context).pop();
+          _equipmentSelectionCompleter!.complete(
+            _dialogEquipmentOptions[selectedEquipmentDialogIndex],
+          );
+        }
+      } 
+
+      return;
+    }
 
     if (selectingPartyMember) {
       if (isUp || isDown) {
@@ -110,6 +140,43 @@ class PauseMenuState extends State<PauseMenu> {
         selectedTab =
             (selectedTab + (isRight ? 1 : -1) + tabs.length) % tabs.length;
       });
+    }
+
+    if (selectedTab == 1) {
+      final slots = EquipmentSlot.values;
+
+      if (isUp || isDown) {
+        setState(() {
+          selectedEquipmentIndex =
+              (selectedEquipmentIndex + (isDown ? 1 : -1) + slots.length) %
+              slots.length;
+          _equipmentScrollController.animateTo(
+            selectedEquipmentIndex * 56.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+          );
+        });
+      } else if (isAction) {
+        final slot = slots[selectedEquipmentIndex];
+        final hasCompatible = widget.player.inventory
+            .whereType<Equipment>()
+            .any((e) => e.slot == slot);
+
+        if (hasCompatible) {
+          _selectEquipmentForSlot(slot);
+        } else if (widget.player.equipped[slot] != null) {
+          setState(() {
+            final item = widget.player.equipped[slot]!;
+            widget.player.addItem(item);
+            widget.player.unequip(slot);
+            widget.player.saveEquipment();
+          });
+        }
+      } else if (input == settings.getBinding('Back') || input == 'Backspace') {
+        Navigator.of(context).pop();
+      }
+
+      return;
     }
 
     if (selectedTab == 2) {
@@ -172,8 +239,7 @@ class PauseMenuState extends State<PauseMenu> {
                   ),
                 ),
                 content: Container(
-                  width:
-                      double.maxFinite, // ensures no intrinsic width measuring
+                  width: double.maxFinite,
                   constraints: const BoxConstraints(
                     maxHeight: 300,
                     minHeight: 100,
@@ -230,12 +296,113 @@ class PauseMenuState extends State<PauseMenu> {
     _partySelectionCompleter!.future.then((selected) {
       if (selected != null) {
         setState(() {
-          selected.heal(item.value ?? 0);
+          if (item is Equipment && item.slot != null) {
+            selected.equip(item as Equipment);
+          } else if (item.value != null && item.value! > 0) {
+            selected.heal(item.value!);
+          }
+
           widget.player.removeItem(item);
+          widget.player.saveEquipment();
         });
       }
     });
   }
+
+  // void _useItem(Item item) {
+  //   final List<BattleCharacter> party = [
+  //     widget.player,
+  //     ...widget.player.currentParty.where((c) => c.name != widget.player.name),
+  //   ];
+
+  //   setState(() {
+  //     selectingPartyMember = true;
+  //     _dialogParty = party;
+  //     selectedPartyIndex = 0;
+  //     _partySelectionCompleter = Completer<BattleCharacter?>();
+  //   });
+
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: true,
+  //     builder:
+  //         (_) => StatefulBuilder(
+  //           builder: (context, setDialogState) {
+  //             return AlertDialog(
+  //               backgroundColor: Colors.black,
+  //               title: const Text(
+  //                 'Use on who?',
+  //                 style: TextStyle(
+  //                   color: Colors.white,
+  //                   fontFamily: 'Ithica',
+  //                   fontSize: 22,
+  //                 ),
+  //               ),
+  //               content: Container(
+  //                 width:
+  //                     double.maxFinite, // ensures no intrinsic width measuring
+  //                 constraints: const BoxConstraints(
+  //                   maxHeight: 300,
+  //                   minHeight: 100,
+  //                 ),
+  //                 child: ListView.builder(
+  //                   controller: _partyDialogScrollController,
+  //                   itemCount: _dialogParty.length,
+  //                   itemBuilder: (context, i) {
+  //                     final member = _dialogParty[i];
+  //                     final isSelected = i == selectedPartyIndex;
+
+  //                     return Scrollbar(
+  //                       controller: _partyDialogScrollController,
+  //                       thumbVisibility: true,
+  //                       child: Container(
+  //                         color:
+  //                             isSelected ? Colors.white.withOpacity(0.2) : null,
+  //                         child: ListTile(
+  //                           title: Text(
+  //                             member.name,
+  //                             style: const TextStyle(
+  //                               color: Colors.white,
+  //                               fontFamily: 'Ithica',
+  //                               fontSize: 24,
+  //                             ),
+  //                           ),
+  //                           subtitle: Text(
+  //                             'HP: ${member.currentHP}/${member.stats.maxHp.toInt()}',
+  //                             style: const TextStyle(
+  //                               color: Colors.white54,
+  //                               fontFamily: 'Ithica',
+  //                             ),
+  //                           ),
+  //                           onTap: () {
+  //                             if (!_partySelectionCompleter!.isCompleted) {
+  //                               Navigator.of(context).pop();
+  //                               _partySelectionCompleter!.complete(member);
+  //                             }
+  //                           },
+  //                         ),
+  //                       ),
+  //                     );
+  //                   },
+  //                 ),
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //   ).then((_) {
+  //     selectingPartyMember = false;
+  //     _dialogParty = [];
+  //   });
+
+  //   _partySelectionCompleter!.future.then((selected) {
+  //     if (selected != null) {
+  //       setState(() {
+  //         selected.heal(item.value ?? 0);
+  //         widget.player.removeItem(item);
+  //       });
+  //     }
+  //   });
+  // }
 
   Widget _buildInventory() {
     final items =
@@ -292,10 +459,234 @@ class PauseMenuState extends State<PauseMenu> {
   }
 
   Widget _buildEquipment() {
-    return const Text(
-      'Equipment screen coming soon.',
-      style: TextStyle(color: Colors.white70, fontFamily: 'Ithica'),
+    final equipmentSlots = EquipmentSlot.values;
+
+    return ListView.builder(
+      controller: _equipmentScrollController,
+      itemCount: equipmentSlots.length,
+      itemBuilder: (context, index) {
+        final slot = equipmentSlots[index];
+        final equippedItem = widget.player.equipped[slot];
+        final isSelected = index == selectedEquipmentIndex;
+
+        return Container(
+          color: isSelected ? Colors.white.withOpacity(0.2) : null,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  '${slot.name.toUpperCase()}: ${equippedItem?.name ?? "None"}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Ithica',
+                    fontSize: 20,
+                  ),
+                ),
+              ),
+              if (equippedItem != null)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      widget.player.addItem(equippedItem);
+                      widget.player.unequip(slot);
+                      widget.player.saveEquipment();
+                    });
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        _hasCompatibleEquipment(slot)
+                            ? Colors.white70
+                            : Colors
+                                .orangeAccent, // Highlight if no replacements
+                  ),
+                  child: const Text('Unequip'),
+                ),
+
+              TextButton(
+                onPressed: () => _selectEquipmentForSlot(slot),
+                child: const Text(
+                  'Change',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
+  }
+
+  bool _hasCompatibleEquipment(EquipmentSlot slot) {
+    return widget.player.inventory.whereType<Equipment>().any(
+      (e) => e.slot == slot,
+    );
+  }
+
+  bool selectingEquipment = false;
+
+  // void _selectEquipmentForSlot(EquipmentSlot slot) {
+  //   final matching =
+  //       widget.player.inventory
+  //           .whereType<Equipment>()
+  //           .where((e) => e.slot == slot)
+  //           .toList();
+
+  //   if (matching.isEmpty) return;
+
+  //   // Delay flag change until next event loop tick
+  //   Future.microtask(() => setState(() => selectingEquipment = true));
+
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: true,
+  //     builder:
+  //         (_) => AlertDialog(
+  //           backgroundColor: Colors.black,
+  //           title: Text(
+  //             'Equip ${slot.name}',
+  //             style: const TextStyle(color: Colors.white, fontFamily: 'Ithica'),
+  //           ),
+  //           content: SizedBox(
+  //             width: double.maxFinite,
+  //             child: ListView.builder(
+  //               itemCount: matching.length,
+  //               itemBuilder: (context, i) {
+  //                 final item = matching[i];
+  //                 return ListTile(
+  //                   title: Text(
+  //                     item.name,
+  //                     style: const TextStyle(
+  //                       color: Colors.white,
+  //                       fontFamily: 'Ithica',
+  //                     ),
+  //                   ),
+  //                   subtitle: Text(
+  //                     'DMG: ${item.damage}, DEF: ${item.defense}, INT: ${item.intelligence}',
+  //                     style: const TextStyle(
+  //                       color: Colors.white70,
+  //                       fontFamily: 'Ithica',
+  //                     ),
+  //                   ),
+  //                   onTap: () {
+  //                     debugPrint('Equipping ${item.name} to player...');
+  //                     final success = widget.player.equip(item);
+  //                     if (success) {
+  //                       debugPrint('Equipped successfully!');
+  //                       widget.player.removeItem(item);
+  //                       widget.player.saveEquipment();
+  //                       setState(() {});
+  //                     } else {
+  //                       debugPrint('Failed to equip ${item.name}');
+  //                     }
+  //                     Navigator.pop(context);
+  //                   },
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //         ),
+  //   ).then((_) {
+  //     if (mounted) {
+  //       setState(() {
+  //         selectingEquipment = false;
+  //         selectedTab = -1; // force tab change
+  //       });
+  //       Future.delayed(const Duration(milliseconds: 50), () {
+  //         if (mounted) {
+  //           setState(() => selectedTab = 1);
+  //         }
+  //       });
+  //     }
+  //   });
+  // }
+
+  void _selectEquipmentForSlot(EquipmentSlot slot) {
+    final matching =
+        widget.player.inventory
+            .whereType<Equipment>()
+            .where((e) => e.slot == slot)
+            .toList();
+
+    if (matching.isEmpty) return;
+
+    setState(() {
+      selectingEquipment = true;
+      _dialogEquipmentOptions = matching;
+      selectedEquipmentDialogIndex = 0;
+      _equipmentSelectionCompleter = Completer<Equipment?>();
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Colors.black,
+              title: const Text(
+                'Select Equipment',
+                style: TextStyle(color: Colors.white, fontFamily: 'Ithica'),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 300,
+                child: ListView.builder(
+                  itemCount: _dialogEquipmentOptions.length,
+                  itemBuilder: (context, i) {
+                    final item = _dialogEquipmentOptions[i];
+                    final isSelected = i == selectedEquipmentDialogIndex;
+                    return Container(
+                      color: isSelected ? Colors.white24 : null,
+                      child: ListTile(
+                        title: Text(
+                          item.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Ithica',
+                          ),
+                        ),
+                        subtitle: Text(
+                          'DMG: ${item.damage}, DEF: ${item.defense}, INT: ${item.intelligence}',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontFamily: 'Ithica',
+                          ),
+                        ),
+                        onTap: () {
+                          if (!_equipmentSelectionCompleter!.isCompleted) {
+                            Navigator.pop(context);
+                            _equipmentSelectionCompleter!.complete(
+                              _dialogEquipmentOptions[i],
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      selectingEquipment = false;
+      _dialogEquipmentOptions = [];
+    });
+
+    _equipmentSelectionCompleter!.future.then((selectedItem) {
+      if (selectedItem != null) {
+        setState(() {
+          widget.player.equip(selectedItem);
+          widget.player.removeItem(selectedItem);
+          widget.player.saveEquipment();
+        });
+      }
+    });
   }
 
   int selectedPartyStatsIndex = 0;

@@ -19,7 +19,6 @@ class TouchControls extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.grey.withOpacity(0.9),
-          // border: Border.all(color: Colors.white, width: 2),
         ),
         child: Center(
           child: Text(
@@ -48,7 +47,6 @@ class TouchControls extends StatelessWidget {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.grey.withOpacity(0.9),
-          // border: Border.all(color: Colors.white, width: 2),
         ),
         child: const Center(
           child: Icon(Icons.menu, color: Colors.white, size: 24),
