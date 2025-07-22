@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:game/game/battle/battle_action.dart';
+import 'package:game/models/battle_action.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/models/battle_status.dart';
 import 'package:game/models/enemy.dart';

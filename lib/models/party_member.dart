@@ -69,11 +69,6 @@ class PartyMember extends SpriteComponent
     height: Platform.isAndroid ? 64 : 256,
   );
 
-  // PartyMember({required this.name, required this.charClass}) {
-  //   stats = CharacterStats(charClass: charClass);
-  //   _init(charClass);
-  // }
-
   final List<BattleStatus> statuses = [];
 
   bool hasStatus(BattleStatusType type) {

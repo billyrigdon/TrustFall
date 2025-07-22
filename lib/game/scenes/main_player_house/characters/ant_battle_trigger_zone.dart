@@ -14,7 +14,7 @@ class AntBattleTriggerZone extends PositionComponent
     this.position = position;
     this.size = size;
     add(RectangleHitbox()..collisionType = CollisionType.passive);
-    priority = -1; // behind everything
+    priority = -1;
   }
 
   @override
@@ -37,6 +37,6 @@ class AntBattleTriggerZone extends PositionComponent
       ),
     ], ant);
 
-    removeFromParent(); // remove the zone after triggering
+    removeFromParent();
   }
 }

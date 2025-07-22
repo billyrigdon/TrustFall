@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:game/game/battle/battle_action.dart';
+import 'package:game/models/battle_action.dart';
 import 'package:game/game/battle/battle_manager.dart';
 import 'package:game/models/battle_character.dart';
 import 'package:game/models/battle_status.dart';
@@ -291,29 +291,7 @@ class BattleOverlayState extends State<BattleOverlay> {
       if (!result.canAct) continue;
 
       final actor = action.actor;
-      final attack = action.attack;
       final item = action.item;
-
-      // BattleCharacter? randomTarget;
-      // if (result.forceRandomTarget) {
-      //   final possibleTargets =
-      //       battleManager.party.where((c) => c.isAlive).toList();
-      //   if (possibleTargets.isNotEmpty) {
-      //     randomTarget =
-      //         possibleTargets[Random().nextInt(possibleTargets.length)];
-      //   }
-      // }
-
-      // if (result.forceAttack && action.type != ActionType.attack) {
-      //   if (attack != null) {
-      //     await battleManager.attackEnemy(actor, attack, enemy, showMessage);
-      //   } else {
-      //     await showMessage(
-      //       "${actor.name} is enraged but doesn't know how to fight! 😬",
-      //     );
-      //   }
-      //   continue;
-      // }
 
       switch (action.type) {
         case ActionType.attack:
@@ -361,7 +339,6 @@ class BattleOverlayState extends State<BattleOverlay> {
     final enemy = battleManager.enemy;
     if (itemMenuOpen) {
       if (targetingAlly) {
-        // Ally target confirmed
         final item = mainInventory[selectedItemIndex];
         final target = battleManager.party[selectedAllyIndex];
 
@@ -382,7 +359,6 @@ class BattleOverlayState extends State<BattleOverlay> {
         final item = mainInventory[selectedItemIndex];
 
         if (selectedIndex == 1) {
-          // Throw selected
           playerActions.add(
             BattleAction(
               actor: currentChar,
@@ -396,7 +372,6 @@ class BattleOverlayState extends State<BattleOverlay> {
             itemMenuOpen = false;
           });
         } else {
-          // Use On selected → go to target selection
           setState(() {
             targetingAlly = true;
             selectedAllyIndex = 0;
@@ -404,7 +379,6 @@ class BattleOverlayState extends State<BattleOverlay> {
           return;
         }
       } else {
-        // First item click: go to submenu
         setState(() {
           selectingItemAction = true;
           selectedItemIndex = selectedIndex;
@@ -458,7 +432,6 @@ class BattleOverlayState extends State<BattleOverlay> {
       }
     }
 
-    // Reset UI state
     setState(() {
       itemMenuOpen = false;
       attackMenuOpen = false;
@@ -470,10 +443,8 @@ class BattleOverlayState extends State<BattleOverlay> {
       bankIndex = 0;
     });
 
-    // Next party member
     turnIndex++;
 
-    // Done selecting all actions?
     if (turnIndex >= battleManager.party.length) {
       turnIndex = 0;
       await _resolveTurn();

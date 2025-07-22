@@ -4,8 +4,6 @@ import 'package:game/models/battle_character.dart';
 import 'package:game/models/character_stats.dart';
 import 'package:game/models/party_member.dart';
 
-//TODO: add mom, dad, bro, sis, ant, baby bird, bug, doctors1-3
-
 abstract class MainPlayerHouseCharacterDefinitions {
   static final Map<String, BattleCharacter> characters = {
     'dude': PartyMember(

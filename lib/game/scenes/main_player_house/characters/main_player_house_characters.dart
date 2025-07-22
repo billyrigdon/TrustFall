@@ -20,7 +20,6 @@ class MainPlayerHouseCharacters {
   }
 
   getCharacter(String id) {
-    // print('getting character $id');
     return getCharacters()[id];
   }
 
@@ -85,8 +84,6 @@ class MainPlayerHouseCharacters {
           'Can you go check on your father?',
           'And tell your brother and sister it\'s time for dinner',
         ],
-        // choices: ['Yes', 'No'],
-        // onChoiceSelected: (choice) {},
       );
     };
     return mom;
@@ -101,9 +98,7 @@ class MainPlayerHouseCharacters {
       gameRef.showDialogue(
         onComplete: () => gameRef.dialogOpen = false,
         worldPosition: brother.position,
-        ['Were going to pop!!', 'and grabbing a burger'],
-        // choices: ['Yes', 'No'],
-        // onChoiceSelected: (choice) {},
+        ['Were going to pops!!', 'and grabbing a burger'],
       );
     };
     return brother;
@@ -119,8 +114,6 @@ class MainPlayerHouseCharacters {
         onComplete: () => gameRef.dialogOpen = false,
         worldPosition: sister.position,
         ['I want a butterscotch soda!!'],
-        // choices: ['Yes', 'No'],
-        // onChoiceSelected: (choice) {},
       );
     };
     return sister;

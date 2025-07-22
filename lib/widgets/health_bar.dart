@@ -45,10 +45,6 @@ class HealthBar extends StatelessWidget {
                 child: Container(color: Colors.green),
               ),
             ),
-            // Positioned(
-            // right: 4,
-            // bottom: -18,
-            // child:
             Text(
               '$hp/$maxHp',
               style: const TextStyle(
@@ -57,7 +53,6 @@ class HealthBar extends StatelessWidget {
                 fontFamily: '8-bit-limit',
               ),
             ),
-            // ),
           ],
         ),
       ],
